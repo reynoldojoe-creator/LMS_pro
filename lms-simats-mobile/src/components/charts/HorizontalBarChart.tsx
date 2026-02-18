@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { colors, typography, spacing} from '../../theme';
 
 interface Props {
     label: string;
@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
     barContainer: {
         height: 24,
         backgroundColor: colors.iosGray5,
-        borderRadius: borderRadius.sm,
+: 8,
         overflow: 'hidden',
         marginBottom: spacing.xs,
     },

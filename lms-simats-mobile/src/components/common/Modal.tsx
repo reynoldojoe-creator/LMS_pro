@@ -8,7 +8,7 @@ import {
     TouchableWithoutFeedback,
     Dimensions,
 } from 'react-native';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { colors, typography, spacing} from '../../theme';
 
 interface ModalProps {
     visible: boolean;
@@ -65,15 +65,15 @@ const styles = StyleSheet.create({
     },
     content: {
         backgroundColor: colors.surface,
-        borderTopLeftRadius: borderRadius.xl,
-        borderTopRightRadius: borderRadius.xl,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
         maxHeight: Dimensions.get('window').height * 0.9,
     },
     dragHandle: {
         width: 36,
         height: 5,
         backgroundColor: colors.iosGray4,
-        borderRadius: borderRadius.full,
+: 9999,
         alignSelf: 'center',
         marginTop: spacing.sm,
     },

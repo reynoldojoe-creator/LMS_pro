@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { colors, typography, spacing, borderRadius } from '../../../../theme';
+import { colors, typography, spacing} from '../../../../theme';
 
 interface Props {
     subject: any;
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     totalBadge: {
         paddingHorizontal: spacing.sm,
         paddingVertical: 2,
-        borderRadius: borderRadius.sm,
+: 8,
         borderWidth: 1,
     },
     totalBadgeGood: {
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     sliderBtn: {
         width: 32,
         height: 32,
-        borderRadius: borderRadius.sm,
+: 8,
         backgroundColor: colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
@@ -169,14 +169,14 @@ const styles = StyleSheet.create({
         flex: 1,
         height: 10,
         backgroundColor: colors.iosGray5,
-        borderRadius: 5,
+: 5,
         marginHorizontal: spacing.sm,
         overflow: 'hidden',
     },
     progressBarInner: {
         height: '100%',
         backgroundColor: colors.primary,
-        borderRadius: 5,
+: 5,
     },
     emptyText: {
         ...typography.caption,

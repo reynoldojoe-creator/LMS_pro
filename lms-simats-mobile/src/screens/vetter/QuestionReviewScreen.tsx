@@ -4,7 +4,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useVetterStore } from '../../store';
 import { Tag, LoadingSpinner } from '../../components/common';
 import { LinenBackground, GlossyNavBar, GlossyCard, GlossyButton } from '../../components/ios6';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { colors, typography, spacing} from '../../theme';
 import { Ionicons } from '@expo/vector-icons';
 
 if (Platform.OS === 'android') {
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
     },
     statusBanner: {
         padding: 10,
-        borderRadius: 5,
+: 5,
         alignItems: 'center',
         borderWidth: 1,
         borderColor: 'rgba(0,0,0,0.1)',
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#F0F0F0',
         paddingHorizontal: 8,
         paddingVertical: 3,
-        borderRadius: 10,
+: 10,
         marginRight: 8,
         marginBottom: 4,
         borderWidth: 1,
@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
     optionCircle: {
         width: 24,
         height: 24,
-        borderRadius: 12,
+: 12,
         backgroundColor: '#F0F0F0',
         alignItems: 'center',
         justifyContent: 'center',
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
     },
     modalContainer: {
         backgroundColor: 'white',
-        borderRadius: borderRadius.lg,
+: 16,
         overflow: 'hidden',
     },
     modalHeader: {
@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
     input: {
         borderWidth: 1,
         borderColor: '#DDD',
-        borderRadius: borderRadius.md,
+: 12,
         padding: spacing.sm,
         height: 100,
         textAlignVertical: 'top',

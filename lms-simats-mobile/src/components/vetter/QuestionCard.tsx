@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { Card } from '../common/Card'; // Assuming Card exists in common
 import { Tag } from '../common/Tag'; // Assuming Tag exists in common
-import { typography, spacing, borderRadius } from '../../theme';
+import { typography, spacing} from '../../theme';
 import { useAppTheme } from '../../hooks';
 import { Question } from '../../types'; // Assuming Question type exists
 
@@ -146,7 +146,7 @@ const getStyles = (colors: any) => StyleSheet.create({
         marginBottom: spacing.md,
         backgroundColor: colors.background, // Slight contrast
         padding: spacing.sm,
-        borderRadius: borderRadius.sm,
+: 8,
     },
     metaItem: {
         marginRight: spacing.lg,
@@ -165,7 +165,7 @@ const getStyles = (colors: any) => StyleSheet.create({
         marginTop: spacing.sm,
         padding: spacing.sm,
         backgroundColor: colors.surface,
-        borderRadius: borderRadius.sm,
+: 8,
         borderWidth: 1,
         borderColor: colors.border,
     },
@@ -181,7 +181,7 @@ const getStyles = (colors: any) => StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         paddingVertical: spacing.sm,
-        borderRadius: borderRadius.sm,
+: 8,
         marginHorizontal: spacing.xs,
     },
     approveButton: {
@@ -202,7 +202,7 @@ const getStyles = (colors: any) => StyleSheet.create({
         marginTop: spacing.sm,
         padding: spacing.sm,
         backgroundColor: colors.error + '10',
-        borderRadius: borderRadius.sm,
+: 8,
     },
     reasonLabel: {
         ...typography.caption,

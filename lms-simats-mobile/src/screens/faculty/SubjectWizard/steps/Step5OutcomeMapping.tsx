@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, Modal } from 'react-native';
 import { useAppTheme } from '../../../../hooks';
-import { spacing, typography, borderRadius } from '../../../../theme';
+import { spacing, typography} from '../../../../theme';
 import { Button, LoadingSpinner } from '../../../../components/common';
 import { subjectService } from '../../../../services/subjectService';
 
@@ -196,7 +196,7 @@ const getStyles = (colors: any) => StyleSheet.create({
         backgroundColor: colors.surface,
         borderBottomWidth: 1,
         borderBottomColor: colors.itemBorder,
-        borderRadius: borderRadius.sm,
+: 8,
         marginBottom: 2,
     },
     topicTitle: {
@@ -216,7 +216,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     },
     modalContent: {
         backgroundColor: colors.surface,
-        borderRadius: borderRadius.lg,
+: 16,
         padding: spacing.lg,
         maxHeight: '80%',
         elevation: 5,
@@ -241,7 +241,7 @@ const getStyles = (colors: any) => StyleSheet.create({
         padding: spacing.md,
         borderWidth: 1,
         borderColor: colors.itemBorder,
-        borderRadius: borderRadius.sm,
+: 8,
         marginBottom: spacing.xs,
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -263,7 +263,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     saveButton: {
         backgroundColor: colors.primary,
         padding: spacing.md,
-        borderRadius: borderRadius.md,
+: 12,
         paddingHorizontal: spacing.xl,
     }
 });

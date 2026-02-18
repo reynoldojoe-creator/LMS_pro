@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.1)',
         marginHorizontal: spacing.md,
         marginTop: spacing.md,
-        borderRadius: borderRadius.md,
+        borderRadius: 12,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.1)',
         shadowColor: 'white',
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         paddingVertical: 6,
-        borderRadius: borderRadius.sm,
+        borderRadius: 8,
     },
     filterTabSelected: {
         backgroundColor: 'rgba(0,0,0,0.3)',

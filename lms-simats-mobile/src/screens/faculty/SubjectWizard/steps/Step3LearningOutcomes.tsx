@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { useAppTheme } from '../../../../hooks';
-import { spacing, typography, borderRadius } from '../../../../theme';
+import { spacing, typography} from '../../../../theme';
 import { Button } from '../../../../components/common';
 import { subjectService } from '../../../../services/subjectService';
 
@@ -123,7 +123,7 @@ const getStyles = (colors: any) => StyleSheet.create({
         marginBottom: spacing.md,
         backgroundColor: colors.surface,
         padding: spacing.md,
-        borderRadius: borderRadius.md,
+: 12,
         borderWidth: 1,
         borderColor: colors.itemBorder,
     },
@@ -146,14 +146,14 @@ const getStyles = (colors: any) => StyleSheet.create({
         minHeight: 60,
         textAlignVertical: 'top',
         backgroundColor: colors.background,
-        borderRadius: borderRadius.sm,
+: 8,
         padding: spacing.sm,
     },
     addButton: {
         padding: spacing.md,
         borderWidth: 1,
         borderColor: colors.primary,
-        borderRadius: borderRadius.md,
+: 12,
         alignItems: 'center',
         borderStyle: 'dashed',
         marginBottom: spacing.xl,

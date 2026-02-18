@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { colors, typography, spacing, borderRadius } from '../../../../theme';
+import { colors, typography, spacing} from '../../../../theme';
 import { Ionicons } from '@expo/vector-icons';
 
 interface Props {
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: spacing.sm,
         paddingVertical: 6,
-        borderRadius: borderRadius.full,
+: 9999,
         backgroundColor: colors.surface,
         borderWidth: 1,
         borderColor: colors.divider,

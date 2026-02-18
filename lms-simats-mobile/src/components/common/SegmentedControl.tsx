@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { colors, typography, spacing} from '../../theme';
 
 interface SegmentedControlProps {
     segments: string[];
@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
         backgroundColor: colors.iosGray6,
-        borderRadius: borderRadius.md,
+: 12,
         padding: 2,
     },
     segment: {
@@ -63,12 +63,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     segmentFirst: {
-        borderTopLeftRadius: borderRadius.md - 2,
-        borderBottomLeftRadius: borderRadius.md - 2,
+        borderTopLeftRadius: 10,
+        borderBottomLeftRadius: 10,
     },
     segmentLast: {
-        borderTopRightRadius: borderRadius.md - 2,
-        borderBottomRightRadius: borderRadius.md - 2,
+        borderTopRightRadius: 10,
+        borderBottomRightRadius: 10,
     },
     segmentSelected: {
         backgroundColor: colors.surface,

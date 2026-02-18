@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as DocumentPicker from 'expo-document-picker';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { colors, typography, spacing} from '../../theme';
 import { LoadingSpinner } from '../../components/common';
 import { LinenBackground, GlossyNavBar, GlossyCard, GlossyButton } from '../../components/ios6';
 import { SampleQuestionsUploadModal } from '../../components/SampleQuestionsUploadModal';
@@ -249,21 +249,21 @@ const styles = StyleSheet.create({
     metaRow: { flexDirection: 'row', justifySelf: 'center', alignSelf: 'center', marginBottom: 10 },
     metaText: { color: '#666', fontSize: 13 },
     actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: 10, justifyContent: 'space-between' },
-    actionCard: { width: '48%', backgroundColor: 'rgba(255,255,255,0.9)', padding: 15, borderRadius: 10, alignItems: 'center', marginBottom: 10, shadowColor: 'black', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.5)' },
+    actionCard: { width: '48%', backgroundColor: 'rgba(255,255,255,0.9)', padding: 15,: 10, alignItems: 'center', marginBottom: 10, shadowColor: 'black', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.5)' },
     actionTitle: { marginTop: 8, fontWeight: 'bold', color: '#333', fontSize: 13 },
     listItem: { flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#EEE', alignItems: 'center' },
     listItemContent: { flex: 1, marginLeft: 10 },
-    bullet: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#666', marginTop: 6 },
+    bullet: { width: 6, height: 6,: 3, backgroundColor: '#666', marginTop: 6 },
     outcomeCode: { fontWeight: 'bold', fontSize: 12, color: '#444' },
     outcomeDesc: { fontSize: 13, color: '#666' },
     emptyText: { fontStyle: 'italic', color: '#999', textAlign: 'center', marginTop: 10 },
     questionItem: { paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#EEE' },
     questionText: { fontSize: 14, color: '#333', marginBottom: 4 },
     questionMeta: { flexDirection: 'row', gap: 5 },
-    metaTag: { fontSize: 10, color: '#666', backgroundColor: '#EEE', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+    metaTag: { fontSize: 10, color: '#666', backgroundColor: '#EEE', paddingHorizontal: 6, paddingVertical: 2,: 4 },
     moreText: { textAlign: 'center', color: colors.primary, marginTop: 10, fontSize: 12 },
     fileListItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#EEE' },
-    fileIcon: { width: 30, height: 30, borderRadius: 5, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
+    fileIcon: { width: 30, height: 30,: 5, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
     fileName: { fontSize: 14, color: '#333', fontWeight: 'bold' },
     fileMeta: { fontSize: 11, color: '#888' },
 });

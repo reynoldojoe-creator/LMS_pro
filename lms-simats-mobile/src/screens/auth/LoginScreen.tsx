@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { typography, spacing, borderRadius } from '../../theme';
+import { typography, spacing} from '../../theme';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { useAuthStore } from '../../store';
@@ -134,7 +134,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     logoPlaceholder: {
         width: 100,
         height: 100,
-        borderRadius: 20,
+: 20,
         backgroundColor: colors.surface,
         justifyContent: 'center',
         alignItems: 'center',
@@ -174,7 +174,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     formCard: {
         backgroundColor: colors.surface,
         padding: spacing.lg,
-        borderRadius: borderRadius.lg,
+: 16,
         borderWidth: 1,
         borderColor: colors.border,
         shadowColor: colors.shadowDark,

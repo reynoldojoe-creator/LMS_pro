@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { colors, typography, spacing} from '../../theme';
 import { useAuthStore, useRubricStore } from '../../store';
 import { LinenBackground, GlossyNavBar, GlossyCard, GlossyButton } from '../../components/ios6';
 
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     content: { paddingBottom: spacing.xl },
     navText: { color: 'white', fontWeight: 'bold', fontSize: 16, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: -1 }, textShadowRadius: 0 },
     questionText: { fontSize: 16, fontWeight: '500', color: '#333', lineHeight: 24 },
-    option: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 10, borderRadius: 5, marginBottom: 5 },
+    option: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 10,: 5, marginBottom: 5 },
     optionCorrect: { backgroundColor: '#E0F8E0', borderWidth: 1, borderColor: '#B0E0B0' },
     optionLabel: { fontWeight: 'bold', color: '#333', marginRight: 10, minWidth: 20 },
     optionText: { flex: 1, color: '#333', fontSize: 14 },

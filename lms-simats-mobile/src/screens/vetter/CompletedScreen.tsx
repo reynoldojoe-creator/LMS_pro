@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { colors, typography, spacing} from '../../theme';
 import { useVetterStore } from '../../store';
 import { LoadingSpinner, EmptyState } from '../../components/common';
 
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     batchCard: {
         backgroundColor: colors.surface,
         padding: spacing.cardPadding,
-        borderRadius: borderRadius.lg,
+: 16,
         borderWidth: 1,
         borderColor: colors.border,
         marginBottom: spacing.md,
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     statsRow: {
         flexDirection: 'row',
         backgroundColor: colors.iosGray6,
-        borderRadius: borderRadius.md,
+: 12,
         padding: spacing.md,
     },
     statItem: {

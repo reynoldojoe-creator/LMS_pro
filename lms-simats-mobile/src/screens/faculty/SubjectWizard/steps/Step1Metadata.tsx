@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useAppTheme } from '../../../../hooks';
-import { spacing, typography, borderRadius } from '../../../../theme';
+import { spacing, typography} from '../../../../theme';
 import { Button } from '../../../../components/common';
 import { subjectService } from '../../../../services/subjectService';
 
@@ -154,7 +154,7 @@ const getStyles = (colors: any) => StyleSheet.create({
         backgroundColor: colors.surface,
         borderWidth: 1,
         borderColor: colors.itemBorder,
-        borderRadius: borderRadius.md,
+: 12,
         padding: spacing.md,
         color: colors.textPrimary,
         ...typography.body,
@@ -165,7 +165,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     typeSelector: {
         flexDirection: 'row',
         backgroundColor: colors.surface,
-        borderRadius: borderRadius.md,
+: 12,
         borderWidth: 1,
         borderColor: colors.itemBorder,
         overflow: 'hidden',

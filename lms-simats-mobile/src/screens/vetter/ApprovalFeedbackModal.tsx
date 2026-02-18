@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 // Force IDE refresh
 import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { colors, typography, spacing} from '../../theme';
 import { Button } from '../../components/common';
 
 interface Props {
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     },
     modalContainer: {
         backgroundColor: colors.surface,
-        borderRadius: borderRadius.lg,
+: 16,
         padding: spacing.xl,
     },
     title: {
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     input: {
         borderWidth: 1,
         borderColor: colors.border,
-        borderRadius: borderRadius.md,
+: 12,
         padding: spacing.md,
         height: 100,
         marginBottom: spacing.lg,

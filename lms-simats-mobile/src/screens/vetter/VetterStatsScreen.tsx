@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { colors, typography, spacing} from '../../theme';
 import { useVetterStore } from '../../store';
 import { LoadingSpinner } from '../../components/common';
 
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.surface,
         padding: spacing.lg,
-        borderRadius: borderRadius.lg,
+: 16,
         borderWidth: 1,
         borderColor: colors.border,
         alignItems: 'center',
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     reasonsCard: {
         backgroundColor: colors.surface,
         padding: spacing.md,
-        borderRadius: borderRadius.lg,
+: 16,
         borderWidth: 1,
         borderColor: colors.border,
     },
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     reasonBar: {
         height: 8,
         backgroundColor: colors.iosGray5,
-        borderRadius: borderRadius.full,
+: 9999,
         overflow: 'hidden',
         marginBottom: spacing.xs,
     },
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         backgroundColor: colors.primary + '10',
         padding: spacing.md,
-        borderRadius: borderRadius.md,
+: 12,
         borderWidth: 1,
         borderColor: colors.primary + '30',
         marginBottom: spacing.md,

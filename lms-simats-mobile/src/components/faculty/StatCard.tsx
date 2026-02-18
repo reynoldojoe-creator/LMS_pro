@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { typography, spacing, borderRadius } from '../../theme';
+import { typography, spacing} from '../../theme';
 import { useAppTheme } from '../../hooks';
 
 interface StatCardProps {
@@ -35,7 +35,7 @@ export const StatCard: React.FC<StatCardProps> = ({ value, label, onPress }) => 
 const getStyles = (colors: any) => StyleSheet.create({
     container: {
         flex: 1,
-        borderRadius: borderRadius.md,
+: 12,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.2,
@@ -45,7 +45,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     card: {
         flex: 1,
         padding: spacing.md,
-        borderRadius: borderRadius.md,
+: 12,
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: 80,

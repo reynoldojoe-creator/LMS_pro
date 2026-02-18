@@ -7,7 +7,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFacultyStore } from '../../store/facultyStore';
 import { useAuthStore } from '../../store/authStore';
 import { useAppTheme } from '../../hooks';
-import { spacing, typography, borderRadius } from '../../theme';
+import { spacing, typography} from '../../theme';
 
 // iOS 6 Components
 import { LinenBackground } from '../../components/ios6/LinenBackground';

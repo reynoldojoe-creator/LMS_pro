@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { typography, spacing, borderRadius } from '../../theme';
+import { typography, spacing} from '../../theme';
 import { useAppTheme } from '../../hooks';
 
 interface CardProps {
@@ -37,7 +37,7 @@ export const Card: React.FC<CardProps> = ({
 const getStyles = (colors: any) => StyleSheet.create({
     card: {
         backgroundColor: colors.card,
-        borderRadius: borderRadius.lg,
+: 16,
         borderWidth: 1,
         borderColor: colors.border,
         shadowColor: '#000',
@@ -47,7 +47,7 @@ const getStyles = (colors: any) => StyleSheet.create({
         elevation: 2,
     },
     grouped: {
-        borderRadius: borderRadius.xl,
+: 20,
         marginHorizontal: spacing.screenHorizontal,
         shadowOpacity: 0.05,
     },
@@ -59,8 +59,8 @@ const getStyles = (colors: any) => StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: colors.divider,
         backgroundColor: 'rgba(0,0,0,0.02)', // Subtle header tint
-        borderTopLeftRadius: borderRadius.lg, // Match card radius
-        borderTopRightRadius: borderRadius.lg,
+        borderTopLeftRadius: 16, // Match card radius
+        borderTopRightRadius: 16,
     },
     title: {
         ...typography.h3,
@@ -76,6 +76,6 @@ const getStyles = (colors: any) => StyleSheet.create({
     },
     bodyNoTitle: {
         padding: spacing.cardPadding,
-        borderRadius: borderRadius.lg,
+: 16,
     },
 });

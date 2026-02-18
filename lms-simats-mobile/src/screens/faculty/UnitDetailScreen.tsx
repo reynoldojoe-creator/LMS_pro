@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { colors, typography, spacing} from '../../theme';
 import { useFacultyStore } from '../../store';
 import { LinenBackground, GlossyNavBar, GroupedTableView } from '../../components/ios6';
 import { Ionicons } from '@expo/vector-icons';

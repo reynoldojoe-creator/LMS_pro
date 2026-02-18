@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Animated, ActivityIndicator } from 'react-native';
 import { Button } from 'react-native-elements';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius } from '../theme';
+import { colors, typography, spacing} from '../theme';
 import { useFacultyStore } from '../store/facultyStore';
 
 interface Props {
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     },
     modalContent: {
         backgroundColor: colors.background,
-        borderRadius: borderRadius.xl,
+: 20,
         padding: spacing.xl,
         alignItems: 'center',
         shadowColor: "#000",
@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
     iconContainer: {
         width: 80,
         height: 80,
-        borderRadius: 40,
+: 40,
         backgroundColor: colors.surface,
         justifyContent: 'center',
         alignItems: 'center',
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
         width: '100%',
         backgroundColor: colors.surface || '#F5F5F5',
         padding: spacing.md,
-        borderRadius: borderRadius.lg,
+: 16,
         marginBottom: spacing.lg,
     },
     statRow: {
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 8,
         backgroundColor: colors.border,
-        borderRadius: 4,
+: 4,
         overflow: 'hidden',
     },
     progressBarFill: {
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#FAFAFA',
         borderWidth: 1,
         borderColor: colors.border,
-        borderRadius: borderRadius.lg,
+: 16,
         padding: spacing.md,
         marginBottom: spacing.md,
     },
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
         padding: spacing.sm,
         borderWidth: 1,
         borderColor: colors.border,
-        borderRadius: borderRadius.md,
+: 12,
         marginBottom: spacing.xs,
         backgroundColor: colors.surface,
     },

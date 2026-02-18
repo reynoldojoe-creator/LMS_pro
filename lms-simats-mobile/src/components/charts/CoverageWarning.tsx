@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { colors, typography, spacing} from '../../theme';
 
 interface Props {
     message: string;
@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         padding: spacing.md,
-        borderRadius: borderRadius.md,
+: 12,
         borderWidth: 1,
         marginTop: spacing.sm,
     },

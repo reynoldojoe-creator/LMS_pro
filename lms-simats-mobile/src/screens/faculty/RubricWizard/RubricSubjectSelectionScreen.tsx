@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { colors, typography, spacing, borderRadius } from '../../../theme';
+import { colors, typography, spacing} from '../../../theme';
 import { useFacultyStore } from '../../../store';
 import { Input } from '../../../components/common';
 import { Ionicons } from '@expo/vector-icons';
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.md,
         backgroundColor: colors.surface,
         marginBottom: spacing.sm,
-        borderRadius: borderRadius.md,
+: 12,
         borderWidth: 1,
         borderColor: colors.border,
     },

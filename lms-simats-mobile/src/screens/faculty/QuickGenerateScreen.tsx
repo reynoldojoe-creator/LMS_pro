@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { colors, typography, spacing} from '../../theme';
 import { useFacultyStore } from '../../store';
 import { Button, Header, Card } from '../../components/common';
 import { Picker } from '../../components/common/Picker';
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     stepperButton: {
         width: 44,
         height: 44,
-        borderRadius: borderRadius.md,
+: 12,
         backgroundColor: colors.surface,
         justifyContent: 'center',
         alignItems: 'center',

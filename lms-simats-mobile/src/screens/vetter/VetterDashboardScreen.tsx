@@ -7,7 +7,7 @@ import { useAuthStore } from '../../store/authStore';
 import { LinenBackground, GlossyNavBar, GlossyCard, GlossyButton } from '../../components/ios6';
 import { StatCard } from '../../components/faculty/StatCard';
 import { colors } from '../../theme/colors';
-import { spacing, typography, borderRadius } from '../../theme';
+import { spacing, typography} from '../../theme';
 
 type VetterDashboardScreenNavigationProp = NativeStackNavigationProp<any, 'VetterDashboard'>;
 
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     progressBar: {
         height: 8,
         backgroundColor: '#E5E5EA',
-        borderRadius: 4,
+: 4,
         overflow: 'hidden',
     },
     progressFill: {

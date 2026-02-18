@@ -6,7 +6,7 @@ import {
     ActivityIndicator,
     View,
 } from 'react-native';
-import { typography, spacing, borderRadius } from '../../theme';
+import { typography, spacing} from '../../theme';
 import { useAppTheme } from '../../hooks';
 
 interface ButtonProps {
@@ -86,7 +86,7 @@ const getStyles = (colors: any) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: borderRadius.md, // Increased radius
+: 12, // Increased radius
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: 'transparent',

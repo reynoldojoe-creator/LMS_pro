@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { colors, typography, spacing} from '../../theme';
 import { useFacultyStore } from '../../store';
 import { LoadingSpinner, Button } from '../../components/common';
 
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
     unitSection: {
         marginBottom: spacing.lg,
         backgroundColor: colors.surface,
-        borderRadius: borderRadius.lg,
+: 16,
         padding: spacing.md,
         borderWidth: 1,
         borderColor: colors.border,

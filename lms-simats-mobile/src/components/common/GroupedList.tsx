@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Switch } from 'react-native';
-import { typography, spacing, borderRadius } from '../../theme';
+import { typography, spacing} from '../../theme';
 import { useAppTheme } from '../../hooks';
 
 export interface GroupedListSection {
@@ -99,7 +99,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     },
     list: {
         backgroundColor: colors.surface,
-        borderRadius: borderRadius.md,
+: 12,
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: colors.border,

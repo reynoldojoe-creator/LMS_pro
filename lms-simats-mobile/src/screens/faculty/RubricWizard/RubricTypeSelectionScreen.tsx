@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { colors, typography, spacing, borderRadius } from '../../../theme';
+import { colors, typography, spacing} from '../../../theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '../../../components/common';
 
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     iconContainer: {
         width: 48,
         height: 48,
-        borderRadius: borderRadius.md,
+: 12,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: spacing.md,

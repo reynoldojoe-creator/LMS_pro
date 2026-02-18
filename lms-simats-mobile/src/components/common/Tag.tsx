@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { typography, spacing, borderRadius } from '../../theme';
+import { typography, spacing} from '../../theme';
 import { useAppTheme } from '../../hooks';
 
 interface TagProps {
@@ -83,7 +83,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     tag: {
         paddingHorizontal: spacing.sm,
         paddingVertical: spacing.xs,
-        borderRadius: borderRadius.full,
+: 9999,
         alignSelf: 'flex-start',
     },
     tagSm: {

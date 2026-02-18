@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { colors, typography, spacing} from '../../theme';
 import { Modal, Button } from '../../components/common';
 
 interface Props {
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
         paddingVertical: spacing.sm,
         paddingHorizontal: spacing.md,
         backgroundColor: colors.surface,
-        borderRadius: borderRadius.sm,
+: 8,
         borderWidth: 1,
         borderColor: colors.border,
         marginBottom: spacing.sm,
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     radio: {
         width: 20,
         height: 20,
-        borderRadius: 10,
+: 10,
         borderWidth: 2,
         borderColor: colors.primary,
         marginRight: spacing.md,
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     radioSelected: {
         width: 10,
         height: 10,
-        borderRadius: 5,
+: 5,
         backgroundColor: colors.primary,
     },
     reasonText: {
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.surface,
         borderWidth: 1,
         borderColor: colors.border,
-        borderRadius: borderRadius.md,
+: 12,
         padding: spacing.md,
         ...typography.body,
         color: colors.textPrimary,

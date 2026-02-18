@@ -3,7 +3,7 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, Alert,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 // Using pure RN components for CO slider - no external dependency needed
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { colors, typography, spacing} from '../../theme';
 import { useRubricStore } from '../../store';
 import { useFacultyStore } from '../../store';
 import { Button, Input, Modal, Header, Card } from '../../components/common'; // Added Header, Card
@@ -520,7 +520,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.surface,
         borderWidth: 1,
         borderColor: colors.border,
-        borderRadius: borderRadius.md,
+: 12,
         minHeight: 44,
     },
     pickerText: {
@@ -551,7 +551,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.iosGray6,
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.xs,
-        borderRadius: borderRadius.sm,
+: 8,
         width: 60,
         textAlign: 'center',
         borderWidth: 1,
@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
     totalBadge: {
         paddingHorizontal: spacing.sm,
         paddingVertical: 2,
-        borderRadius: borderRadius.sm,
+: 8,
         borderWidth: 1,
     },
     totalBadgeGood: {
@@ -648,7 +648,7 @@ const styles = StyleSheet.create({
     sliderBtn: {
         width: 32,
         height: 32,
-        borderRadius: borderRadius.sm,
+: 8,
         backgroundColor: colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
@@ -663,14 +663,14 @@ const styles = StyleSheet.create({
         flex: 1,
         height: 10,
         backgroundColor: colors.iosGray5,
-        borderRadius: 5,
+: 5,
         marginHorizontal: spacing.sm,
         overflow: 'hidden',
     },
     progressBarInner: {
         height: '100%',
         backgroundColor: colors.primary,
-        borderRadius: 5,
+: 5,
     },
     pickerContainer: {
         width: 100,

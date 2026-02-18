@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Switch, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { typography, spacing, borderRadius } from '../../theme';
+import { typography, spacing} from '../../theme';
 import { useAuthStore } from '../../store';
 import { useAppTheme } from '../../hooks';
 import { GroupedList } from '../../components/common';
@@ -171,7 +171,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     groupedList: {
         backgroundColor: colors.surface,
         marginHorizontal: spacing.screenHorizontal,
-        borderRadius: borderRadius.lg,
+: 16,
         borderWidth: 1,
         borderColor: colors.border,
         overflow: 'hidden',
@@ -201,7 +201,7 @@ const getStyles = (colors: any) => StyleSheet.create({
         backgroundColor: colors.surface,
         marginHorizontal: spacing.screenHorizontal,
         paddingVertical: spacing.md,
-        borderRadius: borderRadius.lg,
+: 16,
         borderWidth: 1,
         borderColor: colors.border,
         alignItems: 'center',

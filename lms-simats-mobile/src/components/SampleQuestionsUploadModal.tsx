@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, ActivityIn
 import { Button } from 'react-native-elements';
 import * as DocumentPicker from 'expo-document-picker';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius } from '../theme';
+import { colors, typography, spacing} from '../theme';
 import { useFacultyStore } from '../store/facultyStore';
 
 interface Props {
@@ -221,8 +221,8 @@ const styles = StyleSheet.create({
     },
     modalContent: {
         backgroundColor: colors.background,
-        borderTopLeftRadius: borderRadius.xl,
-        borderTopRightRadius: borderRadius.xl,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
         height: '90%',
         paddingBottom: spacing.xl,
     },
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     },
     card: {
         backgroundColor: colors.surface,
-        borderRadius: borderRadius.lg,
+: 16,
         marginBottom: spacing.md,
         borderWidth: 1,
         borderColor: colors.border,
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     cardIconContainer: {
         width: 40,
         height: 40,
-        borderRadius: 20,
+: 20,
         backgroundColor: colors.background,
         justifyContent: 'center',
         alignItems: 'center',
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         backgroundColor: 'transparent',
         marginBottom: spacing.md,
-        borderRadius: borderRadius.md,
+: 12,
     },
     templateButtonText: {
         color: colors.success,
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: colors.border,
         borderStyle: 'dashed',
-        borderRadius: borderRadius.md,
+: 12,
         padding: spacing.lg,
         alignItems: 'center',
         justifyContent: 'center',
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
     },
     uploadButton: {
         backgroundColor: colors.primary,
-        borderRadius: borderRadius.md,
+: 12,
         height: 48,
     },
     uploadButtonDisabled: {

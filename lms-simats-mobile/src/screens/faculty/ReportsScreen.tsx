@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { colors, typography, spacing} from '../../theme';
 import { StatBox, HorizontalBarChart, CoverageWarning } from '../../components/charts';
 import { reportService } from '../../services/reportService';
 import { subjectService } from '../../services/subjectService';
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: colors.background,
         padding: spacing.sm,
-        borderRadius: borderRadius.sm,
+: 8,
         borderWidth: 1,
         borderColor: colors.border,
     },
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
     pickerDropdown: {
         marginTop: spacing.sm,
         backgroundColor: colors.surface,
-        borderRadius: borderRadius.md,
+: 12,
         borderWidth: 1,
         borderColor: colors.border,
         overflow: 'hidden',
@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
     card: {
         backgroundColor: colors.surface,
         padding: spacing.md,
-        borderRadius: borderRadius.lg,
+: 16,
         borderWidth: 1,
         borderColor: colors.border,
     },
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
         margin: spacing.screenHorizontal,
         padding: spacing.lg,
         backgroundColor: colors.error + '10',
-        borderRadius: borderRadius.md,
+: 12,
         borderWidth: 1,
         borderColor: colors.error + '30',
         alignItems: 'center',
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.primary,
         paddingVertical: spacing.sm,
         paddingHorizontal: spacing.lg,
-        borderRadius: borderRadius.sm,
+: 8,
     },
     retryButtonText: {
         ...typography.bodyBold,
