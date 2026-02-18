@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, Text } from 'react-native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { useVetterStore } from '../../store/vetterStore';
 import { useAuthStore } from '../../store/authStore';
@@ -9,7 +9,7 @@ import { StatCard } from '../../components/faculty/StatCard';
 import { colors } from '../../theme/colors';
 import { spacing, typography, borderRadius } from '../../theme';
 
-type VetterDashboardScreenNavigationProp = StackNavigationProp<any, 'VetterDashboard'>;
+type VetterDashboardScreenNavigationProp = NativeStackNavigationProp<any, 'VetterDashboard'>;
 
 export const VetterDashboardScreen = () => {
     const navigation = useNavigation<VetterDashboardScreenNavigationProp>();

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useFacultyStore } from '../../store/facultyStore';
 import { useAuthStore } from '../../store/authStore';
@@ -16,7 +16,7 @@ import { StatCard } from '../../components/faculty/StatCard';
 import { AppIcon } from '../../components/ios6/AppIcon';
 import { GlossyCard } from '../../components/ios6/GlossyCard';
 
-type DashboardNavigationProp = StackNavigationProp<any>;
+type DashboardNavigationProp = NativeStackNavigationProp<any>;
 
 export const DashboardScreen = () => {
     const navigation = useNavigation<DashboardNavigationProp>();
