@@ -191,26 +191,35 @@ class GenerationManager:
             session.add(batch)
             session.commit()
             
-            # 4) Generate questions for each section type
+            # 4) Pre-retrieve RAG context from ALL topics combined
+            from ..services.rag_service import RAGService
+            rag_service = RAGService()
+            
+            # Build a combined query from all topic names for better retrieval
+            all_topic_names = [t.name for t in topics]
+            combined_query = "; ".join(all_topic_names)
+            
+            # Retrieve WITHOUT topic_id filter to get chunks from ALL topics
+            all_topics_context = rag_service.retrieve_context(
+                query_text=combined_query,
+                subject_id=str(rubric.subject_id),
+                n_results=15,  # More results since covering all topics
+                topic_id=None   # NO filter — get chunks from ALL topics
+            )
+            
+            # 5) Generate questions for each section type
             generated_ids = []
             current_count = 0
             topic_index = 0
-            context_cache = {} # Cache RAG context per topic to avoid re-fetching
             
             for task in gen_tasks:
                 q_type = task["question_type"]
                 count = task["count"]
                 logger.info(f"Generating {count} {q_type} questions...")
                 
-                # Distribute questions across topics
-                # Distribute questions across topics
-                remaining = count
-                # Generate ALL questions of this type in ONE call (or batched by topic if needed)
-                # For maximum speed as requested, we use one call per type.
-                # We use the first topic for RAG context, or we could randomize/rotate.
-                # Given the user request "Generate ALL questions of this type in ONE call", we do exactly that.
-                
-                target_topic_id = topic_ids[0] if topic_ids else None
+                # Distribute across topics round-robin
+                target_topic_id = topic_ids[topic_index % len(topic_ids)] if topic_ids else None
+                topic_index += 1
                 
                 try:
                     result = await topic_actions_service.quick_generate_questions(
@@ -219,7 +228,8 @@ class GenerationManager:
                         topic_id=target_topic_id,
                         question_type=q_type,
                         count=count,
-                        difficulty="medium"
+                        difficulty=task.get("difficulty", "medium"),
+                        pre_retrieved_context=all_topics_context  # Pass pre-retrieved context
                     )
                     
                     questions = result.get("questions", [])

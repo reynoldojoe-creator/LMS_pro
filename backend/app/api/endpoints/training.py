@@ -40,9 +40,16 @@ async def run_training_job(job_id: str, topic_id: int, db_session_factory, job_m
             
         if job_meta and job_meta.get("sample_file_ids"):
             # Filter by specific sample files if provided
+            # Ensure IDs are integers
+            try:
+                # Convert to int, ignoring non-digits
+                sample_file_ids = [int(sid) for sid in job_meta["sample_file_ids"] if str(sid).isdigit()]
+            except:
+                sample_file_ids = []
+
             sample_questions = db.query(database.SampleQuestion).filter(
                 database.SampleQuestion.topic_id == topic_id,
-                database.SampleQuestion.id.in_(job_meta["sample_file_ids"])
+                database.SampleQuestion.id.in_(sample_file_ids)
             ).all()
         else:
             # Default: use all
@@ -140,25 +147,10 @@ async def run_training_job(job_id: str, topic_id: int, db_session_factory, job_m
     finally:
         db.close()
 
-class TrainModelRequest(BaseModel):
-    sample_file_ids: List[str] = []
 
-@router.post("/topics/{topic_id}/train-model")
-async def train_model(
-    topic_id: int, 
-    request: TrainModelRequest = Body(...), # Or just body if simple
-    background_tasks: BackgroundTasks = None, # Make sure this is injected
-    db: Session = Depends(get_db)
-):
-    # Actually we should use Pydantic model for body if possible, or just receive list
-    # But here let's stick to simple since we might change sig
-    pass
-
-# Redefining to be cleaner
-from pydantic import BaseModel
 
 class TrainRequest(BaseModel):
-    sample_file_ids: List[str] = []
+    sample_file_ids: List[int] = []
 
 @router.post("/topics/{topic_id}/train-model")
 async def train_model(
@@ -183,9 +175,21 @@ async def train_model(
     # Pass metadata to job
     job_meta = {"sample_file_ids": request.sample_file_ids}
     
-    background_tasks.add_task(run_training_job, job_id, topic_id, database.SessionLocal, job_meta)
+    # Run in background via sync wrapper to ensure event loop handling
+    background_tasks.add_task(_run_training_sync, job_id, topic_id, database.SessionLocal, job_meta)
     
     return {"job_id": job_id, "status": "pending"}
+
+def _run_training_sync(job_id, topic_id, session_factory, job_meta):
+    """
+    Wrapper to run async training job in background task
+    """
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(run_training_job(job_id, topic_id, session_factory, job_meta))
+    finally:
+        loop.close()
 
 @router.get("/topics/{topic_id}/sample-files")
 async def get_sample_files(topic_id: int, db: Session = Depends(get_db)):

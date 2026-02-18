@@ -335,11 +335,20 @@ class TopicActionsService:
             elif not options:
                 options = {}
 
+            # Handle co_mapping types
+            co_val = s.co_mapping
+            if isinstance(co_val, dict):
+                co_val = ", ".join(co_val.keys())
+            elif isinstance(co_val, list):
+                co_val = ", ".join(str(x) for x in co_val)
+            elif not co_val:
+                co_val = s.co_ids or "N/A"
+
             result.append({
                 "question_text": s.question_text,
                 "options": options,
                 "correct_answer": s.correct_answer or "N/A",
-                "co_mapping": s.co_mapping or "N/A"
+                "co_mapping": co_val
             })
         
         return result
@@ -384,7 +393,6 @@ class TopicActionsService:
                 topic=topic['name'],
                 difficulty=difficulty,
                 marks=6,
-                word_count=100,
                 co=co_mappings_str,
                 lo=lo_mappings_str
             )
@@ -427,11 +435,12 @@ OUTPUT FORMAT (strict JSON):
             # Request slightly more to allow for valid JSON parsing and dedup availability
             # But the prompt says {count}. Let's stick to {count} for now to avoid confusion.
             
-            result = await self.llm_service.generate_json(
+            result = await self.llm_service.generate(
                 prompt=prompt,
                 model=config.GENERATION_MODEL, # Verify config.GENERATION_MODEL exists/is correct
                 temperature=0.7,
-                max_tokens=3000 if count <= 3 else 4000
+                max_tokens=3000 if count <= 3 else 4000,
+                expect_json=True
             )
             
             generated_questions = result.get("questions", [])
