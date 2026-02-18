@@ -93,12 +93,33 @@ async def run_training_job(job_id: str, topic_id: int, db_session_factory, job_m
             })
             
         training_jobs[job_id]["progress"] = 30
-        training_jobs[job_id]["current_step"] = "Training skill model..."
+        training_jobs[job_id]["current_step"] = "Training skill model..." # Moved this line here
         
+        # Get actual content from RAG for this topic
+        from ...services.rag_service import RAGService
+        rag_service = RAGService()
+        try:
+            notes_content = rag_service.retrieve_context(
+                query_text=topic.name,
+                subject_id=str(topic.subject_id),
+                n_results=10,
+                topic_id=str(topic.id)
+            )
+            if not notes_content:
+                # Fallback to metadata if no content found
+                notes_content = "\n".join(
+                    [f"Note: {n.title} (File: {n.file_path})" for n in notes]
+                )
+        except Exception as e:
+            logger.warning(f"Failed to get RAG content for skill: {e}")
+            notes_content = "\n".join(
+                [f"Note: {n.title}" for n in notes]
+            )
+
         # C. Run Training
         result = await service.train_topic_skill(
-            subject_id=topic.subject_id,
-            topic_id=topic.id,
+            subject_id=str(topic.subject_id),
+            topic_id=str(topic.id),
             topic_name=topic.name,
             sample_questions=samples_formatted,
             notes_content=notes_content,

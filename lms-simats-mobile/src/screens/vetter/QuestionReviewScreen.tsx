@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, LayoutAnimation, Platform, UIManager } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, LayoutAnimation, Platform, UIManager, Modal, TextInput } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { colors, typography, spacing, borderRadius } from '../../theme';
 import { useVetterStore } from '../../store';
-import { Button, Tag, LoadingSpinner } from '../../components/common';
-import { RejectReasonModal } from './RejectReasonModal';
-import { QuarantineModal } from './QuarantineModal';
-import { ApprovalFeedbackModal } from './ApprovalFeedbackModal';
+import { Tag, LoadingSpinner } from '../../components/common';
+import { LinenBackground, GlossyNavBar, GlossyCard, GlossyButton } from '../../components/ios6';
+import { colors, typography, spacing, borderRadius } from '../../theme';
+import { Ionicons } from '@expo/vector-icons';
 
 if (Platform.OS === 'android') {
     if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -25,10 +23,10 @@ export const QuestionReviewScreen = ({ route, navigation }: Props) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isExpandedRAG, setIsExpandedRAG] = useState(false);
 
-    // Modals
-    const [showRejectModal, setShowRejectModal] = useState(false);
-    const [showQuarantineModal, setShowQuarantineModal] = useState(false);
-    const [showApproveModal, setShowApproveModal] = useState(false);
+    // Feedback Modal State
+    const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
+    const [actionType, setActionType] = useState<'reject' | 'flag' | 'approve' | null>(null);
+    const [feedbackText, setFeedbackText] = useState('');
 
     useEffect(() => {
         if (!currentBatch || currentBatch.id !== batchId) {
@@ -44,7 +42,14 @@ export const QuestionReviewScreen = ({ route, navigation }: Props) => {
     }, [currentBatch, initialQuestionId]);
 
     if (isLoading || !currentBatch) {
-        return <LoadingSpinner fullScreen />;
+        return (
+            <LinenBackground>
+                <GlossyNavBar title="Loading..." showBack onBack={() => navigation.goBack()} />
+                <View style={styles.center}>
+                    <LoadingSpinner />
+                </View>
+            </LinenBackground>
+        );
     }
 
     const question = currentBatch.questions[currentIndex];
@@ -53,9 +58,12 @@ export const QuestionReviewScreen = ({ route, navigation }: Props) => {
 
     if (!question) {
         return (
-            <SafeAreaView style={styles.container}>
-                <Text>No questions found in this batch.</Text>
-            </SafeAreaView>
+            <LinenBackground>
+                <GlossyNavBar title="Review" showBack onBack={() => navigation.goBack()} />
+                <View style={styles.center}>
+                    <Text style={styles.emptyText}>No questions found in this batch.</Text>
+                </View>
+            </LinenBackground>
         );
     }
 
@@ -72,54 +80,60 @@ export const QuestionReviewScreen = ({ route, navigation }: Props) => {
         setIsExpandedRAG(!isExpandedRAG);
     };
 
-    const handleApprove = async (feedback?: any) => {
-        // Feedback is optional notes/adjustments
-        await approveQuestion(question.id, feedback?.coAdjustments, feedback?.loAdjustments);
-        // Note: passing 'notes' to approveQuestion depends on store update. 
-        // For now, let's assume store handles it or we update store later to accept notes.
-        // We updated backend to accept notes, but store function signature might need update or we pass in adjustments object.
-
-        setShowApproveModal(false);
-        if (!isLast) handleNext();
-        else navigation.goBack();
+    const handleActionParams = (type: 'reject' | 'flag' | 'approve') => {
+        setActionType(type);
+        setFeedbackText('');
+        if (type === 'approve') {
+            // For approve, maybe we don't need a modal unless there are adjustments?
+            // Let's just approve directly for now to be simple, or show modal for optional notes.
+            // Given the previous code had handleApprove taking feedback, let's just call it directly for now
+            // unless user wants to add notes.
+            // Actually, let's keep it simple: approve identifies as success.
+            submitAction('approved', '');
+        } else {
+            setFeedbackModalVisible(true);
+        }
     };
 
-    const handleReject = async (reason: string) => {
-        await rejectQuestion(question.id, reason);
-        setShowRejectModal(false);
-        if (!isLast) handleNext();
-        else navigation.goBack();
-    };
+    const submitAction = async (status: string, notes: string) => {
+        try {
+            if (status === 'approved') {
+                await approveQuestion(question.id); // Add notes/adjustments if needed
+            } else if (status === 'rejected') {
+                await rejectQuestion(question.id, notes);
+            } else if (status === 'flagged') { // Mapping flag to quarantine
+                await quarantineQuestion(question.id, notes);
+            }
 
-    const handleQuarantine = async (notes: string) => {
-        await quarantineQuestion(question.id, notes);
-        setShowQuarantineModal(false);
-        if (!isLast) handleNext();
-        else navigation.goBack();
+            setFeedbackModalVisible(false);
+            if (!isLast) handleNext();
+            else navigation.goBack();
+        } catch (e) {
+            console.error(e);
+            // Show error toast?
+        }
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Text style={styles.backChevron}>‹</Text>
-                    <Text style={styles.backText}>Queue</Text>
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>
-                    {currentIndex + 1} / {currentBatch.totalQuestions}
-                </Text>
-                <View style={styles.navButtons}>
-                    <TouchableOpacity onPress={handlePrev} disabled={isFirst} style={[styles.navBtn, isFirst && styles.disabledNav]}>
-                        <Text style={styles.navBtnText}>←</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={handleNext} disabled={isLast} style={[styles.navBtn, isLast && styles.disabledNav]}>
-                        <Text style={styles.navBtnText}>→</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
+        <LinenBackground>
+            <GlossyNavBar
+                title={`Question ${currentIndex + 1} of ${currentBatch.totalQuestions}`}
+                showBack
+                onBack={() => navigation.goBack()}
+                rightButton={
+                    (<View style={styles.navButtons}>
+                        <TouchableOpacity onPress={handlePrev} disabled={isFirst} style={[styles.navBtn, isFirst && styles.disabledNav]}>
+                            <Ionicons name="chevron-back" size={24} color={isFirst ? "rgba(255,255,255,0.3)" : "white"} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={handleNext} disabled={isLast} style={[styles.navBtn, isLast && styles.disabledNav]}>
+                            <Ionicons name="chevron-forward" size={24} color={isLast ? "rgba(255,255,255,0.3)" : "white"} />
+                        </TouchableOpacity>
+                    </View>) as React.ReactNode
+                }
+            />
 
-            <ScrollView style={styles.content}>
-                {/* Clean Status & Type Only */}
+            <ScrollView contentContainerStyle={styles.scrollContent}>
+                {/* Status Tags */}
                 <View style={styles.tagsRow}>
                     <Tag label={question.type.toUpperCase()} color={colors.primary} />
                     {question.status !== 'pending' && (
@@ -130,355 +144,355 @@ export const QuestionReviewScreen = ({ route, navigation }: Props) => {
                     )}
                 </View>
 
-                {/* RAG Context Section */}
-                <TouchableOpacity onPress={toggleRAG} style={styles.ragHeader} activeOpacity={0.8}>
-                    <Text style={styles.ragTitle}>Source Context (RAG)</Text>
-                    <Text style={styles.ragChevron}>{isExpandedRAG ? '▼' : '▶'}</Text>
-                </TouchableOpacity>
-
-                {isExpandedRAG && (
-                    <View style={styles.ragContent}>
-                        {question.ragContext && question.ragContext.length > 0 ? (
-                            question.ragContext.map((chunk, i) => (
-                                <View key={i} style={styles.ragChunk}>
-                                    <Text style={styles.ragText}>{chunk}</Text>
-                                </View>
-                            ))
-                        ) : (
-                            <Text style={styles.ragEmpty}>No RAG context available</Text>
-                        )}
+                {/* Status Banner */}
+                {question.status !== 'pending' && (
+                    <View style={[
+                        styles.statusBanner,
+                        question.status === 'approved' ? styles.statusSuccess :
+                            question.status === 'rejected' ? styles.statusError : styles.statusWarning
+                    ]}>
+                        <Text style={styles.statusText}>
+                            Status: {question.status.toUpperCase()}
+                        </Text>
                     </View>
                 )}
 
-                {/* Question */}
-                <View style={styles.questionSection}>
+                <GlossyCard title="Question Text">
                     <Text style={styles.questionText}>{question.questionText}</Text>
-                </View>
 
-                {/* Options (MCQ) */}
-                {question.type === 'mcq' && question.options && (
-                    <View style={styles.optionsSection}>
-                        {(Array.isArray(question.options) ? question.options : Object.values(question.options)).map((option: string, index: number) => {
-                            const cleanOption = option.replace(/^[A-Z][\.\)]\s*/, '');
+                    <View style={styles.metaContainer}>
+                        <View style={styles.badge}>
+                            <Text style={styles.badgeText}>{question.type}</Text>
+                        </View>
+                        <View style={styles.badge}>
+                            <Text style={styles.badgeText}>{question.difficulty}</Text>
+                        </View>
+                        <View style={styles.badge}>
+                            <Text style={styles.badgeText}>Bloom: {question.bloomLevel}</Text>
+                        </View>
+                    </View>
+                </GlossyCard>
+
+                {question.options && (
+                    <GlossyCard title="Options">
+                        {Array.isArray(question.options) ? question.options.map((opt: string, i: number) => {
+                            const isCorrect = question.correctAnswer === opt || question.correctAnswer?.includes(opt);
                             return (
-                                <View
-                                    key={index}
-                                    style={[
-                                        styles.optionCard,
-                                        option === question.correctAnswer && styles.correctOption,
-                                    ]}
-                                >
-                                    <Text style={styles.optionLabel}>{String.fromCharCode(65 + index)}</Text>
-                                    <Text style={styles.optionText}>{cleanOption}</Text>
-                                    {option === question.correctAnswer && (
-                                        <Text style={styles.correctMark}>✓</Text>
+                                <View key={i} style={[
+                                    styles.optionRow,
+                                    i !== question.options.length - 1 && styles.optionBorder
+                                ]}>
+                                    <View style={styles.optionCircle}>
+                                        <Text style={styles.optionLetter}>{String.fromCharCode(65 + i)}</Text>
+                                    </View>
+                                    <Text style={[
+                                        styles.optionText,
+                                        isCorrect && styles.correctOptionText
+                                    ]}>{opt}</Text>
+                                    {isCorrect && (
+                                        <Ionicons name="checkmark-circle" size={20} color={colors.success} />
                                     )}
                                 </View>
                             );
-                        })}
-                    </View>
+                        }) : null}
+                    </GlossyCard>
                 )}
 
-                {/* Topic Metadata (COs/LOs) */}
-                <View style={styles.metaCard}>
-                    <Text style={styles.metaTitle}>Topic Outcomes</Text>
+                <GlossyCard title="Correct Answer">
+                    <Text style={styles.answerValue}>{question.correctAnswer}</Text>
+                </GlossyCard>
 
-                    <View style={styles.metaRow}>
-                        <Text style={styles.metaLabel}>COs:</Text>
-                        {question.topicCOs && question.topicCOs.length > 0 ? (
-                            <View style={styles.chips}>
-                                {question.topicCOs.map(co => (
-                                    <Text key={co} style={styles.chip}>{co}</Text>
-                                ))}
-                            </View>
-                        ) : <Text style={styles.metaValue}>None</Text>}
-                    </View>
+                {/* RAG Context - Collapsible */}
+                <View style={styles.ragSection}>
+                    <TouchableOpacity
+                        style={styles.ragHeader}
+                        onPress={toggleRAG}
+                        activeOpacity={0.7}
+                    >
+                        <Text style={styles.ragTitle}>Source Context (RAG)</Text>
+                        <Ionicons
+                            name={isExpandedRAG ? "chevron-up" : "chevron-down"}
+                            size={20}
+                            color="#666"
+                        />
+                    </TouchableOpacity>
 
-                    <View style={styles.metaRow}>
-                        <Text style={styles.metaLabel}>LOs:</Text>
-                        {question.topicLOs && question.topicLOs.length > 0 ? (
-                            <View style={styles.chips}>
-                                {question.topicLOs.map(lo => (
-                                    <Text key={lo} style={styles.chip}>{lo}</Text>
-                                ))}
-                            </View>
-                        ) : <Text style={styles.metaValue}>None</Text>}
-                    </View>
+                    {isExpandedRAG && (
+                        <GlossyCard>
+                            {question.ragContext && question.ragContext.length > 0 ? (
+                                question.ragContext.map((ctx, idx) => (
+                                    <Text key={idx} style={styles.ragText}>{ctx}</Text>
+                                ))
+                            ) : (
+                                <Text style={styles.ragText}>No context available.</Text>
+                            )}
+                        </GlossyCard>
+                    )}
                 </View>
-
             </ScrollView>
 
-            {/* Action Buttons */}
+            {/* Bottom Action Bar */}
             <View style={styles.actionBar}>
-                <TouchableOpacity
-                    style={[styles.actionButton, styles.rejectButton]}
-                    onPress={() => setShowRejectModal(true)}
-                >
-                    <Text style={styles.actionIcon}>✗</Text>
-                    <Text style={styles.actionLabel}>Reject</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[styles.actionButton, styles.quarantineButton]}
-                    onPress={() => setShowQuarantineModal(true)}
-                >
-                    <Text style={styles.actionIcon}>⚠️</Text>
-                    <Text style={styles.actionLabel}>Flag</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[styles.actionButton, styles.approveButton]}
-                    onPress={() => setShowApproveModal(true)}
-                // onPress={() => handleApprove()} // Direct approve if no feedback needed
-                >
-                    <Text style={styles.actionIcon}>✓</Text>
-                    <Text style={{ ...styles.actionLabel, color: 'white' }}>Approve</Text>
-                </TouchableOpacity>
+                <View style={styles.actionButtonContainer}>
+                    <GlossyButton
+                        title="Reject"
+                        // color="red" // gloss button might not support color prop directly, checks needed. Assuming it does or defaults.
+                        onPress={() => handleActionParams('reject')}
+                        style={{ backgroundColor: '#FF3B30' }}
+                    />
+                </View>
+                <View style={styles.actionButtonContainer}>
+                    <GlossyButton
+                        title="Flag"
+                        // color="orange"
+                        onPress={() => handleActionParams('flag')}
+                        style={{ backgroundColor: '#FF9500' }}
+                    />
+                </View>
+                <View style={styles.actionButtonContainer}>
+                    <GlossyButton
+                        title="Approve"
+                        // color="green"
+                        onPress={() => handleActionParams('approve')}
+                        style={{ backgroundColor: '#4CD964' }}
+                    />
+                </View>
             </View>
 
-            {/* Modals */}
-            <RejectReasonModal
-                visible={showRejectModal}
-                onClose={() => setShowRejectModal(false)}
-                onConfirm={handleReject}
-            />
+            {/* Feedback Modal */}
+            <Modal
+                transparent={true}
+                visible={feedbackModalVisible}
+                animationType="fade"
+                onRequestClose={() => setFeedbackModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>
+                                {actionType === 'reject' ? 'Reject Question' : 'Flag Question'}
+                            </Text>
+                        </View>
+                        <View style={styles.modalContent}>
+                            <Text style={styles.modalLabel}>Reason (Optional):</Text>
+                            <TextInput
+                                style={styles.input}
+                                multiline
+                                numberOfLines={4}
+                                placeholder="Enter feedback here..."
+                                value={feedbackText}
+                                onChangeText={setFeedbackText}
+                            />
 
-            <QuarantineModal
-                visible={showQuarantineModal}
-                onClose={() => setShowQuarantineModal(false)}
-                onConfirm={handleQuarantine}
-            />
-
-            <ApprovalFeedbackModal
-                visible={showApproveModal}
-                onClose={() => setShowApproveModal(false)}
-                onConfirm={handleApprove}
-            />
-        </SafeAreaView>
+                            <View style={styles.modalButtons}>
+                                <GlossyButton
+                                    title="Cancel"
+                                    onPress={() => setFeedbackModalVisible(false)}
+                                    style={{ flex: 1, marginRight: 5, backgroundColor: '#8E8E93' }}
+                                />
+                                <GlossyButton
+                                    title="Confirm"
+                                    onPress={() => submitAction(actionType === 'reject' ? 'rejected' : 'flagged', feedbackText)}
+                                    style={{ flex: 1, marginLeft: 5, backgroundColor: actionType === 'reject' ? '#FF3B30' : '#FF9500' }}
+                                />
+                            </View>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+        </LinenBackground>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    center: {
         flex: 1,
-        backgroundColor: colors.background,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: spacing.screenHorizontal,
-        paddingVertical: spacing.sm,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.divider,
-        backgroundColor: colors.surface,
     },
-    backButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        width: 80,
-    },
-    backChevron: {
-        fontSize: 28,
-        color: colors.primary,
-        marginRight: 4,
-    },
-    backText: {
-        ...typography.body,
-        color: colors.primary,
-    },
-    headerTitle: {
-        ...typography.h3,
-        color: colors.textPrimary,
+    emptyText: {
+        fontSize: 16,
+        color: '#666',
     },
     navButtons: {
         flexDirection: 'row',
-        width: 80,
-        justifyContent: 'flex-end',
-        gap: 8,
+        gap: 16,
     },
     navBtn: {
-        padding: 8,
+        padding: 4,
     },
     disabledNav: {
         opacity: 0.3,
     },
-    navBtnText: {
-        fontSize: 20,
-        color: colors.primary,
-        fontWeight: 'bold',
-    },
-    content: {
-        flex: 1,
-        padding: spacing.lg,
+    scrollContent: {
+        paddingBottom: 100,
+        paddingHorizontal: spacing.md,
+        paddingTop: spacing.md,
     },
     tagsRow: {
         flexDirection: 'row',
-        gap: spacing.sm,
+        gap: 8,
+        marginBottom: spacing.sm,
+    },
+    statusBanner: {
+        padding: 10,
+        borderRadius: 5,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.1)',
         marginBottom: spacing.md,
+    },
+    statusSuccess: { backgroundColor: '#E0F8E0' },
+    statusError: { backgroundColor: '#F8E0E0' },
+    statusWarning: { backgroundColor: '#F8F0E0' },
+    statusText: {
+        fontWeight: 'bold',
+        fontSize: 12,
+        color: '#333'
+    },
+    questionText: {
+        fontSize: 16,
+        color: '#000',
+        lineHeight: 24,
+        marginBottom: 10,
+    },
+    metaContainer: {
+        flexDirection: 'row',
+        marginTop: 10,
+        borderTopWidth: 1,
+        borderTopColor: '#EEE',
+        paddingTop: 10,
+        flexWrap: 'wrap',
+    },
+    badge: {
+        backgroundColor: '#F0F0F0',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 10,
+        marginRight: 8,
+        marginBottom: 4,
+        borderWidth: 1,
+        borderColor: '#E0E0E0',
+    },
+    badgeText: {
+        fontSize: 11,
+        color: '#666',
+    },
+    optionRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 10,
+    },
+    optionBorder: {
+        borderBottomWidth: 1,
+        borderBottomColor: '#EEE',
+    },
+    optionCircle: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#F0F0F0',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 10,
+        borderWidth: 1,
+        borderColor: '#DDD',
+    },
+    optionLetter: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#666',
+    },
+    optionText: {
+        flex: 1,
+        fontSize: 14,
+        color: '#333',
+    },
+    correctOptionText: {
+        fontWeight: 'bold',
+        color: colors.success,
+    },
+    answerValue: {
+        fontSize: 14,
+        color: colors.success,
+        fontWeight: 'bold',
+    },
+    ragSection: {
+        marginTop: 10,
     },
     ragHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        paddingVertical: 10,
+        paddingHorizontal: 5,
         alignItems: 'center',
-        backgroundColor: colors.surface,
-        padding: spacing.md,
-        borderRadius: borderRadius.sm,
-        borderWidth: 1,
-        borderColor: colors.border,
-        marginBottom: spacing.xs,
     },
     ragTitle: {
-        ...typography.captionBold,
-        color: colors.textSecondary,
-    },
-    ragChevron: {
         fontSize: 12,
-        color: colors.textSecondary,
-    },
-    ragContent: {
-        backgroundColor: colors.surface,
-        padding: spacing.md,
-        borderRadius: borderRadius.sm,
-        borderWidth: 1,
-        borderColor: colors.border,
-        marginTop: -1,
-        marginBottom: spacing.lg,
-    },
-    ragChunk: {
-        marginBottom: spacing.sm,
-        paddingBottom: spacing.sm,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.divider,
+        fontWeight: 'bold',
+        color: '#666',
     },
     ragText: {
-        ...typography.caption,
-        color: colors.textSecondary,
+        fontSize: 12,
+        color: '#666',
         lineHeight: 18,
-    },
-    ragEmpty: {
-        ...typography.caption,
-        color: colors.textTertiary,
-        fontStyle: 'italic',
-    },
-    questionSection: {
-        marginBottom: spacing.lg,
-        marginTop: spacing.sm,
-    },
-    questionText: {
-        ...typography.h3,
-        color: colors.textPrimary,
-        lineHeight: 28,
-    },
-    optionsSection: {
-        gap: spacing.sm,
-        marginBottom: spacing.lg,
-    },
-    optionCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: spacing.md,
-        backgroundColor: colors.surface,
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderRadius: borderRadius.sm,
-    },
-    correctOption: {
-        borderColor: colors.success,
-        backgroundColor: colors.success + '10',
-    },
-    optionLabel: {
-        ...typography.bodyBold,
-        marginRight: spacing.md,
-        color: colors.textPrimary,
-    },
-    optionText: {
-        ...typography.body,
-        flex: 1,
-        color: colors.textPrimary,
-    },
-    correctMark: {
-        color: colors.success,
-        fontWeight: 'bold',
-        marginLeft: spacing.sm,
-    },
-    metaCard: {
-        backgroundColor: colors.primary + '10',
-        padding: spacing.md,
-        borderRadius: borderRadius.md,
-        marginBottom: spacing.xl,
-    },
-    metaTitle: {
-        ...typography.captionBold,
-        color: colors.textSecondary,
-        marginBottom: spacing.sm,
-        textTransform: 'uppercase',
-    },
-    metaRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: spacing.xs,
-    },
-    metaLabel: {
-        ...typography.caption,
-        width: 40,
-        color: colors.textSecondary,
-    },
-    chips: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 4,
-        flex: 1,
-    },
-    chip: {
-        ...typography.caption,
-        backgroundColor: colors.surface,
-        borderWidth: 1,
-        borderColor: colors.border,
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 4,
-        overflow: 'hidden',
-    },
-    metaValue: {
-        ...typography.caption,
-        color: colors.textSecondary,
+        marginBottom: 4,
     },
     actionBar: {
         flexDirection: 'row',
         padding: spacing.md,
-        backgroundColor: colors.surface,
+        backgroundColor: 'rgba(255,255,255,0.9)',
         borderTopWidth: 1,
-        borderTopColor: colors.divider,
+        borderTopColor: '#CCC',
         gap: spacing.md,
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
     },
-    actionButton: {
+    actionButtonContainer: {
         flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
         justifyContent: 'center',
-        paddingVertical: spacing.sm,
-        borderRadius: borderRadius.md,
-        gap: 8,
+        padding: spacing.lg,
     },
-    rejectButton: {
-        backgroundColor: colors.error + '10',
-        borderWidth: 1,
-        borderColor: colors.error,
+    modalContainer: {
+        backgroundColor: 'white',
+        borderRadius: borderRadius.lg,
+        overflow: 'hidden',
     },
-    quarantineButton: {
-        backgroundColor: colors.warning + '10',
-        borderWidth: 1,
-        borderColor: colors.warning,
+    modalHeader: {
+        padding: spacing.md,
+        backgroundColor: '#F0F0F0',
+        borderBottomWidth: 1,
+        borderBottomColor: '#DDD',
     },
-    approveButton: {
-        backgroundColor: colors.success,
-    },
-    actionIcon: {
+    modalTitle: {
         fontSize: 16,
+        fontWeight: 'bold',
+        textAlign: 'center',
     },
-    actionLabel: {
-        ...typography.captionBold,
-        color: colors.textPrimary,
+    modalContent: {
+        padding: spacing.md,
+    },
+    modalLabel: {
+        fontSize: 14,
+        marginBottom: spacing.xs,
+        color: '#333',
+    },
+    input: {
+        borderWidth: 1,
+        borderColor: '#DDD',
+        borderRadius: borderRadius.md,
+        padding: spacing.sm,
+        height: 100,
+        textAlignVertical: 'top',
+        marginBottom: spacing.md,
+    },
+    modalButtons: {
+        flexDirection: 'row',
     },
 });

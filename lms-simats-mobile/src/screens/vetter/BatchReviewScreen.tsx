@@ -1,33 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet, Alert, TouchableOpacity, Text } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { typography, spacing, borderRadius } from '../../theme';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Text } from 'react-native';
 import { useVetterStore } from '../../store/vetterStore';
-import { useAppTheme } from '../../hooks';
-import { Header, LoadingSkeleton, ErrorState, Tag } from '../../components/common';
-import { QuestionCard } from '../../components/vetter';
-import { RejectReasonModal } from './RejectReasonModal';
-import { QuarantineModal } from './QuarantineModal';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { LinenBackground, GlossyNavBar, GroupedTableView } from '../../components/ios6';
+import { colors } from '../../theme/colors';
+import { spacing, typography } from '../../theme';
+import { Ionicons } from '@expo/vector-icons';
 
 type Props = NativeStackScreenProps<any, 'BatchReview'>;
 
-export const BatchReviewScreen = ({ navigation, route }: Props) => {
-    const { batchId } = route.params;
-    const { colors } = useAppTheme();
-    const {
-        currentBatch,
-        startReview,
-        approveQuestion,
-        rejectQuestion,
-        quarantineQuestion,
-        isLoading,
-        error
-    } = useVetterStore();
-
-    const [rejectModalVisible, setRejectModalVisible] = useState(false);
-    const [quarantineModalVisible, setQuarantineModalVisible] = useState(false);
-    const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(null);
+export function BatchReviewScreen({ route, navigation }: Props) {
+    const { batchId } = route.params as { batchId: string };
+    const { currentBatch, isLoading, startReview } = useVetterStore();
+    const [refreshing, setRefreshing] = useState(false);
 
     useEffect(() => {
         if (batchId) {
@@ -35,193 +20,127 @@ export const BatchReviewScreen = ({ navigation, route }: Props) => {
         }
     }, [batchId]);
 
-    const handleApprove = async (id: string) => {
-        try {
-            await approveQuestion(id);
-        } catch (error) {
-            Alert.alert('Error', 'Failed to approve question');
-        }
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await startReview(batchId);
+        setRefreshing(false);
+    }, [batchId]);
+
+    const handleQuestionPress = (questionId: string, index: number) => {
+        navigation.navigate('QuestionReview', {
+            batchId,
+            questionId,
+            index,
+            total: currentBatch?.questions?.length || 0
+        });
     };
 
-    const handleRejectPress = (id: string) => {
-        setSelectedQuestionId(id);
-        setRejectModalVisible(true);
+    const handleCompleteSession = async () => {
+        Alert.alert(
+            "Complete Review",
+            "Are you sure you want to complete this review session?",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Complete", onPress: () => {
+                        navigation.goBack();
+                    }
+                }
+            ]
+        );
     };
 
-    const handleConfirmReject = async (reason: string) => {
-        if (selectedQuestionId) {
-            try {
-                await rejectQuestion(selectedQuestionId, reason);
-                setRejectModalVisible(false);
-                setSelectedQuestionId(null);
-            } catch (error) {
-                Alert.alert('Error', 'Failed to reject question');
-            }
-        }
-    };
-
-    const handleQuarantinePress = (id: string) => {
-        setSelectedQuestionId(id);
-        setQuarantineModalVisible(true);
-    };
-
-    const handleConfirmQuarantine = async (notes: string) => {
-        if (selectedQuestionId) {
-            try {
-                await quarantineQuestion(selectedQuestionId, notes);
-                setQuarantineModalVisible(false);
-                setSelectedQuestionId(null);
-            } catch (error) {
-                Alert.alert('Error', 'Failed to quarantine question');
-            }
-        }
-    };
-
-    const styles = getStyles(colors);
-
-    if (isLoading && !currentBatch) {
+    if (isLoading && !refreshing && !currentBatch) {
         return (
-            <SafeAreaView style={styles.container} edges={['top']}>
-                <Header title="Review Batch" onBack={() => navigation.goBack()} />
+            <LinenBackground>
+                <GlossyNavBar title="Loading..." showBack />
                 <View style={styles.loadingContainer}>
-                    <LoadingSkeleton variant="card" height={150} style={{ marginBottom: 16 }} />
-                    <LoadingSkeleton variant="card" height={150} style={{ marginBottom: 16 }} />
-                    <LoadingSkeleton variant="card" height={150} />
+                    <ActivityIndicator size="large" color="#4C566C" />
                 </View>
-            </SafeAreaView>
+            </LinenBackground>
         );
     }
 
-    if (error && !currentBatch) {
+    if (!currentBatch && !isLoading) {
         return (
-            <SafeAreaView style={styles.container} edges={['top']}>
-                <Header title="Review Batch" onBack={() => navigation.goBack()} />
-                <ErrorState message={error} onRetry={() => startReview(batchId)} />
-            </SafeAreaView>
+            <LinenBackground>
+                <GlossyNavBar title="Error" showBack />
+                <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>Batch not found</Text>
+                </View>
+            </LinenBackground>
         );
     }
 
-    if (!currentBatch) return null;
+    const questionRows = currentBatch?.questions?.map((q, i) => {
+        let iconName: any = 'help-circle';
+        let iconColor = '#4A90E2';
 
-    const pendingQuestions = currentBatch.questions.filter(q => q.status === 'pending');
-    const reviewedQuestions = currentBatch.questions.filter(q => q.status !== 'pending');
+        if (q.status === 'approved') {
+            iconName = 'checkmark-circle';
+            iconColor = colors.success;
+        } else if (q.status === 'rejected') {
+            iconName = 'close-circle';
+            iconColor = '#FF3B30';
+        } else if (q.status === 'quarantined') {
+            iconName = 'flag';
+            iconColor = '#FF9500';
+        }
+
+        return {
+            title: `Q${i + 1}: ${q.type.toUpperCase()}`,
+            subtitle: q.questionText ? (q.questionText.substring(0, 40) + '...') : 'No text',
+            chevron: true,
+            onPress: () => handleQuestionPress(q.id, i)
+        };
+    }) || [];
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
-            <Header
-                title={currentBatch.title || 'Review Batch'}
-                subtitle={`${pendingQuestions.length} pending`}
-                onBack={() => navigation.goBack()}
+        <LinenBackground>
+            <GlossyNavBar
+                title={currentBatch?.title || "Batch Review"}
+                showBack
+                rightButton={{
+                    title: 'Finish',
+                    onPress: handleCompleteSession,
+                    variant: 'blue'
+                }}
             />
 
-            <ScrollView contentContainerStyle={styles.content}>
-                {currentBatch.questions.length === 0 ? (
-                    <Text style={styles.emptyText}>No questions in this batch.</Text>
-                ) : (
-                    <>
-                        {pendingQuestions.map((question, index) => (
-                            <QuestionCard
-                                key={question.id}
-                                question={question}
-                                index={index + 1}
-                                onApprove={() => handleApprove(question.id)}
-                                onReject={() => handleRejectPress(question.id)}
-                                onQuarantine={() => handleQuarantinePress(question.id)}
-                            />
-                        ))}
-
-                        {reviewedQuestions.length > 0 && (
-                            <View style={styles.reviewedSection}>
-                                <Text style={styles.sectionHeader}>Reviewed Questions</Text>
-                                {reviewedQuestions.map((question, index) => (
-                                    <QuestionCard
-                                        key={question.id}
-                                        question={question}
-                                        index={index + 1}
-                                        readOnly={true}
-                                    />
-                                ))}
-                            </View>
-                        )}
-
-                        {pendingQuestions.length === 0 && reviewedQuestions.length > 0 && (
-                            <View style={styles.completionState}>
-                                <Text style={styles.completionText}>All questions reviewed!</Text>
-                                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.finishButton}>
-                                    <Text style={styles.finishButtonText}>Finish Review</Text>
-                                </TouchableOpacity>
-                            </View>
-                        )}
-                    </>
-                )}
-            </ScrollView>
-
-            <RejectReasonModal
-                visible={rejectModalVisible}
-                onClose={() => setRejectModalVisible(false)}
-                onConfirm={handleConfirmReject}
-            />
-
-            <QuarantineModal
-                visible={quarantineModalVisible}
-                onClose={() => setQuarantineModalVisible(false)}
-                onConfirm={handleConfirmQuarantine}
-            />
-        </SafeAreaView>
+            <View style={styles.content}>
+                <GroupedTableView
+                    sections={[
+                        {
+                            title: 'Questions',
+                            data: questionRows,
+                            footer: `Total: ${currentBatch?.totalQuestions || 0} • Reviewed: ${currentBatch?.reviewedQuestions || 0}`
+                        }
+                    ]}
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                />
+            </View>
+        </LinenBackground>
     );
-};
+}
 
-const getStyles = (colors: any) => StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.background,
-    },
+const styles = StyleSheet.create({
     content: {
-        padding: spacing.screenHorizontal,
-        paddingBottom: spacing.xl,
+        flex: 1,
     },
     loadingContainer: {
-        padding: spacing.screenHorizontal,
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     emptyText: {
         ...typography.body,
-        color: colors.textSecondary,
+        color: colors.ios.detailText,
         textAlign: 'center',
-        marginTop: spacing.xl,
-    },
-    reviewedSection: {
-        marginTop: spacing.xl,
-        paddingTop: spacing.lg,
-        borderTopWidth: 1,
-        borderTopColor: colors.border,
-    },
-    sectionHeader: {
-        ...typography.h3,
-        color: colors.textPrimary,
-        marginBottom: spacing.md,
-    },
-    completionState: {
-        padding: spacing.lg,
-        alignItems: 'center',
-        backgroundColor: colors.surface,
-        borderRadius: borderRadius.lg,
-        marginTop: spacing.lg,
-        borderWidth: 1,
-        borderColor: colors.success,
-    },
-    completionText: {
-        ...typography.h3,
-        color: colors.success,
-        marginBottom: spacing.md,
-    },
-    finishButton: {
-        backgroundColor: colors.primary,
-        paddingHorizontal: spacing.xl,
-        paddingVertical: spacing.md,
-        borderRadius: borderRadius.md,
-    },
-    finishButtonText: {
-        ...typography.captionBold,
-        color: colors.textInverse,
     },
 });

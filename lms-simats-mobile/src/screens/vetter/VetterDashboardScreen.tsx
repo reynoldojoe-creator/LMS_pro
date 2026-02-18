@@ -1,265 +1,231 @@
-import React, { useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useFocusEffect } from '@react-navigation/native';
-import { typography, spacing, borderRadius } from '../../theme';
-import { useVetterStore } from '../../store';
-import { useAppTheme } from '../../hooks';
-import { LoadingSpinner, EmptyState, Tag } from '../../components/common';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, StyleSheet, ScrollView, RefreshControl, Text } from 'react-native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { useNavigation } from '@react-navigation/native';
+import { useVetterStore } from '../../store/vetterStore';
+import { useAuthStore } from '../../store/authStore';
+import { LinenBackground, GlossyNavBar, GlossyCard, GlossyButton } from '../../components/ios6';
+import { StatCard } from '../../components/faculty/StatCard';
+import { colors } from '../../theme/colors';
+import { spacing, typography, borderRadius } from '../../theme';
 
-type Props = NativeStackScreenProps<any, 'VetterDashboard'>;
+type VetterDashboardScreenNavigationProp = StackNavigationProp<any, 'VetterDashboard'>;
 
-export const VetterDashboardScreen = ({ navigation }: Props) => {
-    const { pendingBatches, fetchPendingBatches, isLoading } = useVetterStore();
-    const { colors } = useAppTheme();
-    const styles = getStyles(colors);
+export const VetterDashboardScreen = () => {
+    const navigation = useNavigation<VetterDashboardScreenNavigationProp>();
+    const { user } = useAuthStore();
+    const {
+        stats,
+        pendingBatches,
+        isLoading,
+        fetchStats,
+        fetchPendingBatches,
+        startReview
+    } = useVetterStore();
 
-    useFocusEffect(
-        useCallback(() => {
-            fetchPendingBatches();
-        }, [])
-    );
+    const [refreshing, setRefreshing] = useState(false);
 
-    const handleBatchPress = (batchId: string) => {
+    const loadData = useCallback(async () => {
+        await Promise.all([fetchStats(), fetchPendingBatches()]);
+    }, [fetchStats, fetchPendingBatches]);
+
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await loadData();
+        setRefreshing(false);
+    };
+
+    const handleStartReview = async (batchId: string) => {
+        await startReview(batchId);
         navigation.navigate('BatchReview', { batchId });
     };
 
-    const getTimeAgo = (dateString: string) => {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffMs = now.getTime() - date.getTime();
-        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-        const diffDays = Math.floor(diffHours / 24);
-
-        if (diffHours < 1) return 'Just now';
-        if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-        if (diffDays === 1) return 'Yesterday';
-        return `${diffDays} days ago`;
-    };
-
-    const isUrgent = (batch: any) => {
-        if (!batch.dueDate) return false;
-        const dueDate = new Date(batch.dueDate);
-        const now = new Date();
-        const diffHours = (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60);
-        return diffHours < 48; // Urgent if due within 48 hours
-    };
-
-    if (isLoading && pendingBatches.length === 0) {
-        return <LoadingSpinner fullScreen />;
-    }
-
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Review Queue</Text>
-                <View style={styles.headerActions}>
-                    <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={styles.iconButton}>
-                        <Text style={styles.settingsIcon}>⚙️</Text>
-                    </TouchableOpacity>
+        <LinenBackground>
+            <GlossyNavBar title="Vetting Dashboard" />
+
+            <ScrollView
+                style={styles.container}
+                contentContainerStyle={styles.contentContainer}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing || isLoading} onRefresh={onRefresh} tintColor="#333" />
+                }
+            >
+                {/* Header */}
+                <View style={styles.header}>
+                    <Text style={styles.greeting}>Welcome,</Text>
+                    <Text style={styles.username}>{user?.name || 'Vetter'}</Text>
                 </View>
-            </View>
 
-            <View style={styles.summaryCard}>
-                <Text style={styles.summaryText}>
-                    Pending Review: {pendingBatches.length} batch{pendingBatches.length !== 1 ? 'es' : ''}
-                </Text>
-            </View>
+                {/* Stats */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>PERFORMANCE</Text>
+                    <View style={styles.statsRow}>
+                        <View style={styles.statWrapper}>
+                            <StatCard
+                                value={stats.totalReviewedThisWeek}
+                                label="Weekly"
+                            />
+                        </View>
+                        <View style={styles.statWrapper}>
+                            <StatCard
+                                value={stats.totalReviewedThisMonth}
+                                label="Monthly"
+                            />
+                        </View>
+                        <View style={styles.statWrapper}>
+                            <StatCard
+                                value={Math.round(stats.approvalRate * 100)}
+                                label="Approval %"
+                            />
+                        </View>
+                    </View>
+                </View>
 
-            <ScrollView style={styles.scrollView}>
-                {pendingBatches.length === 0 ? (
-                    <EmptyState
-                        icon="✓"
-                        title="All Caught Up!"
-                        description="No pending reviews at the moment"
-                    />
-                ) : (
-                    <View style={styles.batchesList}>
-                        {pendingBatches.map((batch) => {
-                            const progress = batch.totalQuestions > 0
-                                ? batch.reviewedQuestions / batch.totalQuestions
-                                : 0;
-                            const urgent = isUrgent(batch);
-
-                            return (
-                                <TouchableOpacity
-                                    key={batch.id}
-                                    style={[styles.batchCard, urgent && styles.urgentCard]}
-                                    onPress={() => handleBatchPress(batch.id)}
-                                    activeOpacity={0.7}
-                                >
-                                    <View style={styles.batchHeader}>
-                                        <Text style={styles.batchTitle}>{batch.title}</Text>
-                                        {urgent && <Tag label="⚠️ Urgent" color={colors.error} />}
-                                    </View>
-
-                                    <Text style={styles.batchMeta}>
-                                        {batch.facultyName} • {batch.totalQuestions} questions
-                                    </Text>
-
-                                    <Text style={styles.batchGenerated}>
-                                        Generated: {getTimeAgo(batch.generatedAt)}
-                                    </Text>
-
-                                    {batch.dueDate && (
-                                        <Text style={styles.batchDue}>
-                                            Due: {new Date(batch.dueDate).toLocaleDateString('en-US', {
-                                                month: 'short',
-                                                day: 'numeric',
-                                            })}
+                {/* Pending Batches */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>PENDING REVIEWS</Text>
+                    {pendingBatches.length > 0 ? (
+                        pendingBatches.map(batch => (
+                            <GlossyCard key={batch.id} title={batch.title}>
+                                <View style={styles.batchCardContent}>
+                                    <View style={styles.batchInfo}>
+                                        <Text style={styles.batchSubtitle}>{batch.facultyName}</Text>
+                                        <Text style={styles.batchMeta}>
+                                            {batch.reviewedQuestions} / {batch.totalQuestions} Questions
                                         </Text>
-                                    )}
 
-                                    {batch.reviewedQuestions > 0 && (
                                         <View style={styles.progressSection}>
                                             <View style={styles.progressBar}>
-                                                <View style={[styles.progressFill, { width: `${progress * 100}%`, backgroundColor: colors.primary }]} />
+                                                <View
+                                                    style={[
+                                                        styles.progressFill,
+                                                        { width: `${(batch.reviewedQuestions / batch.totalQuestions) * 100}%` }
+                                                    ]}
+                                                />
                                             </View>
-                                            <Text style={styles.progressText}>
-                                                {batch.reviewedQuestions}/{batch.totalQuestions}
-                                            </Text>
                                         </View>
-                                    )}
-
-                                    <View style={styles.actionButton}>
-                                        <Text style={styles.actionButtonText}>
-                                            {batch.reviewedQuestions > 0 ? 'Continue Review →' : 'Start Review →'}
-                                        </Text>
                                     </View>
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </View>
-                )}
+
+                                    <GlossyButton
+                                        title={batch.reviewedQuestions === batch.totalQuestions ? "Complete" : "Review"}
+                                        onPress={() => handleStartReview(batch.id)}
+                                        style={styles.reviewButton}
+                                    />
+                                </View>
+                            </GlossyCard>
+                        ))
+                    ) : (
+                        <View style={styles.emptyState}>
+                            <Text style={styles.emptyText}>No pending batches</Text>
+                        </View>
+                    )}
+                </View>
+
+                <View style={styles.bottomSpacer} />
             </ScrollView>
-        </SafeAreaView>
+        </LinenBackground>
     );
 };
 
-const getStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: colors.background,
+    },
+    contentContainer: {
+        paddingBottom: spacing.xl,
     },
     header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: spacing.screenHorizontal,
-        paddingVertical: spacing.md,
+        padding: spacing.lg,
+        paddingBottom: spacing.md,
     },
-    headerTitle: {
-        ...typography.h2,
-        color: colors.textPrimary,
+    greeting: {
+        fontSize: 18,
+        color: '#4C566C',
+        fontWeight: '500',
+        textShadowColor: 'rgba(255,255,255,0.5)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 0,
     },
-    headerActions: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.md,
-    },
-    filterText: {
-        ...typography.body,
-        color: colors.primary,
-    },
-    iconButton: {
-        padding: spacing.xs,
-    },
-    settingsIcon: {
+    username: {
         fontSize: 24,
-        color: colors.textPrimary,
+        fontWeight: 'bold',
+        color: '#000',
+        marginTop: 4,
+        textShadowColor: 'rgba(255,255,255,0.5)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 0,
     },
-    summaryCard: {
-        backgroundColor: colors.primary + '15',
-        marginHorizontal: spacing.screenHorizontal,
-        padding: spacing.md,
-        borderRadius: borderRadius.md,
-        marginBottom: spacing.md,
+    section: {
+        marginTop: spacing.lg,
+        paddingHorizontal: spacing.md,
     },
-    summaryText: {
-        ...typography.bodyBold,
-        color: colors.primary,
-        textAlign: 'center',
-    },
-    scrollView: {
-        flex: 1,
-    },
-    batchesList: {
-        padding: spacing.screenHorizontal,
-    },
-    batchCard: {
-        backgroundColor: colors.surface,
-        padding: spacing.cardPadding,
-        borderRadius: borderRadius.lg,
-        borderWidth: 1,
-        borderColor: colors.border,
-        marginBottom: spacing.md,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        elevation: 2,
-    },
-    urgentCard: {
-        borderColor: colors.error,
-        borderWidth: 2,
-    },
-    batchHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
+    sectionTitle: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#4C566C',
         marginBottom: spacing.xs,
+        marginLeft: spacing.xs,
+        textShadowColor: 'rgba(255,255,255,0.5)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 0,
     },
-    batchTitle: {
-        ...typography.h3,
-        color: colors.textPrimary,
+    statsRow: {
+        flexDirection: 'row',
+        marginHorizontal: -spacing.xs,
+    },
+    statWrapper: {
         flex: 1,
-        marginRight: spacing.sm,
+        paddingHorizontal: spacing.xs,
+    },
+    batchCardContent: {
+        padding: spacing.md,
+    },
+    batchInfo: {
+        marginBottom: spacing.md,
+    },
+    batchSubtitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 4,
     },
     batchMeta: {
-        ...typography.body,
-        color: colors.textSecondary,
-        marginBottom: spacing.xs,
-    },
-    batchGenerated: {
-        ...typography.caption,
-        color: colors.textTertiary,
-        marginBottom: spacing.xs,
-    },
-    batchDue: {
-        ...typography.caption,
-        color: colors.error,
+        fontSize: 14,
+        color: '#666',
         marginBottom: spacing.sm,
     },
     progressSection: {
-        marginTop: spacing.sm,
-        marginBottom: spacing.md,
+        marginBottom: spacing.xs,
     },
     progressBar: {
         height: 8,
-        backgroundColor: colors.iosGray5,
-        borderRadius: borderRadius.full,
+        backgroundColor: '#E5E5EA',
+        borderRadius: 4,
         overflow: 'hidden',
-        marginBottom: spacing.xs,
     },
     progressFill: {
         height: '100%',
         backgroundColor: colors.primary,
     },
-    progressText: {
-        ...typography.caption,
-        color: colors.textSecondary,
-        textAlign: 'right',
+    reviewButton: {
+        minWidth: 100,
+        alignSelf: 'flex-start',
     },
-    actionButton: {
-        backgroundColor: colors.primary,
-        paddingVertical: spacing.sm,
-        paddingHorizontal: spacing.md,
-        borderRadius: borderRadius.sm,
+    emptyState: {
+        padding: spacing.xl,
         alignItems: 'center',
+        justifyContent: 'center',
     },
-    actionButtonText: {
-        ...typography.bodyBold,
-        color: colors.textInverse,
+    emptyText: {
+        color: '#8E8E93',
+        fontSize: 16,
     },
+    bottomSpacer: {
+        height: 40,
+    }
 });

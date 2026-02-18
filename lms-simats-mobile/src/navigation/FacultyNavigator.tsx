@@ -9,12 +9,10 @@ import { useAppTheme } from '../hooks';
 import { DashboardScreen } from '../screens/faculty/DashboardScreen';
 import { SubjectsListScreen } from '../screens/faculty/SubjectsListScreen';
 import { SubjectDetailScreen } from '../screens/faculty/SubjectDetailScreen';
-// import { AddSubjectScreen } from '../screens/faculty/AddSubjectScreen';
 import { SubjectWizardScreen } from '../screens/faculty/SubjectWizard/SubjectWizardScreen';
 import { UnitDetailScreen } from '../screens/faculty/UnitDetailScreen';
 import { TopicDetailScreen } from '../screens/faculty/TopicDetailScreen';
 import { EditCOLOScreen } from '../screens/faculty/EditCOLOScreen';
-// EditSyllabusScreen removed — syllabus extractor no longer used
 import { QuickGenerateScreen } from '../screens/faculty/QuickGenerateScreen';
 import { GeneratingScreen } from '../screens/faculty/GeneratingScreen';
 import { GenerationResultsScreen } from '../screens/faculty/GenerationResultsScreen';
@@ -29,6 +27,9 @@ import { ReportsScreen } from '../screens/faculty/ReportsScreen';
 import { SettingsScreen } from '../screens/common/SettingsScreen';
 import { ProfileScreen } from '../screens/common/ProfileScreen';
 
+// Custom Tab Bar
+import { GlossyTabBar } from '../components/ios6/GlossyTabBar';
+
 // Placeholder screens
 const PlaceholderScreen = ({ title }: { title: string }) => (
     <View style={styles.placeholder}>
@@ -36,8 +37,6 @@ const PlaceholderScreen = ({ title }: { title: string }) => (
         <Text style={styles.placeholderSubtext}>Coming soon...</Text>
     </View>
 );
-
-const GenerateScreen = () => <PlaceholderScreen title="Generate Questions" />;
 
 // Stack navigator for Rubrics
 const RubricsStack = createNativeStackNavigator();
@@ -87,68 +86,44 @@ const HomeNavigator = () => (
 
 const Tab = createBottomTabNavigator();
 
-
-
-// ... (keep View, Text imports)
-// Remove static colors import or keep for other things if needed, but we used it for tabBar
-
 export const FacultyNavigator = () => {
-    const { colors } = useAppTheme();
-
     return (
         <Tab.Navigator
+            tabBar={(props) => <GlossyTabBar {...props} />}
             screenOptions={{
                 headerShown: false,
-                tabBarActiveTintColor: colors.primary,
-                tabBarInactiveTintColor: colors.iosGray,
-                tabBarStyle: {
-                    backgroundColor: colors.surface,
-                    borderTopWidth: 1,
-                    borderTopColor: colors.divider,
-                    paddingBottom: 5,
-                    paddingTop: 5,
-                    height: 60,
-                },
-                tabBarLabelStyle: {
-                    fontSize: 10,
-                    fontWeight: '500',
-                },
             }}
         >
             <Tab.Screen
                 name="Home"
                 component={HomeNavigator}
                 options={{
-                    tabBarIcon: ({ color, size }) => (
-                        <Text style={{ fontSize: size, color }}>🏠</Text>
-                    ),
+                    title: 'Home',
+                    tabBarLabel: 'Home'
                 }}
             />
             <Tab.Screen
                 name="Subjects"
                 component={SubjectsNavigator}
                 options={{
-                    tabBarIcon: ({ color, size }) => (
-                        <Text style={{ fontSize: size, color }}>📚</Text>
-                    ),
+                    title: 'Subjects',
+                    tabBarLabel: 'Subjects'
                 }}
             />
             <Tab.Screen
                 name="Rubrics"
                 component={RubricsNavigator}
                 options={{
-                    tabBarIcon: ({ color, size }) => (
-                        <Text style={{ fontSize: size, color }}>📋</Text>
-                    ),
+                    title: 'Rubrics',
+                    tabBarLabel: 'Rubrics'
                 }}
             />
             <Tab.Screen
                 name="Reports"
                 component={ReportsScreen}
                 options={{
-                    tabBarIcon: ({ color, size }) => (
-                        <Text style={{ fontSize: size, color }}>📊</Text>
-                    ),
+                    title: 'Reports',
+                    tabBarLabel: 'Reports'
                 }}
             />
         </Tab.Navigator>

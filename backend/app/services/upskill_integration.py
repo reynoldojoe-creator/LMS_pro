@@ -20,57 +20,91 @@ class LMSUpskillService:
         self.config = None
 
     async def train_topic_skill(
-        self, 
-        subject_id: int, 
-        topic_id: int, 
+        self,
+        subject_id: str,
+        topic_id: str,
         topic_name: str,
-        sample_questions: List[Any],
+        sample_questions: List[Dict],
         notes_content: str,
-        co_descriptions: List[str],
-        lo_descriptions: List[str]
+        co_descriptions: List[str] = None,
+        lo_descriptions: List[str] = None
     ) -> Dict[str, Any]:
         """
-        Create a skill profile for a topic using sample questions.
-        On limited hardware (no GPU), this creates a structured skill file
-        that enhances few-shot prompting during question generation.
+        Creates a structured 'skill' profile for the topic.
+        This is a form of Few-Shot Prompt Engineering, not LoRA fine-tuning.
         """
         skill_name = f"{subject_id}_{topic_id}_{topic_name.lower().replace(' ', '-')}"
         skill_path = self.skills_dir / skill_name
         skill_path.mkdir(parents=True, exist_ok=True)
         
-        # Build a structured skill document from the samples
-        skill_content = f"# Skill Profile: {topic_name}\n\n"
-        skill_content += f"## Course Outcomes\n"
-        for co in co_descriptions:
-            skill_content += f"- {co}\n"
-        skill_content += f"\n## Learning Outcomes\n"
-        for lo in lo_descriptions:
-            skill_content += f"- {lo}\n"
+        # Build comprehensive skill instructions
+        co_text = "\n".join([f'- {co}' for co in (co_descriptions or [])])
+        lo_text = "\n".join([f'- {lo}' for lo in (lo_descriptions or [])])
+
+        skill_content = f"""# Generation Instructions for: {topic_name}
+
+## Role
+You are generating exam questions for the topic "{topic_name}". 
+Follow these instructions precisely.
+
+## Course Outcomes to Target
+{co_text}
+
+## Learning Outcomes to Assess  
+{lo_text}
+
+## Question Style Guide (learned from {len(sample_questions)} examples)
+"""
         
-        skill_content += f"\n## Question Patterns ({len(sample_questions)} samples)\n\n"
+        # Analyze patterns from samples
+        # Handle dict vs object access (depending on source)
+        def get_val(s, key, default=''):
+            if isinstance(s, dict): return s.get(key, default)
+            return getattr(s, key, default)
+
+        mcq_samples = [q for q in sample_questions 
+                    if get_val(q, 'type', get_val(q, 'question_type', '')).lower().replace('_', '') in ('mcq', 'multiplechoice')]
         
-        # Analyze sample question patterns
-        type_counts = {}
-        difficulty_counts = {}
-        for q in sample_questions:
-            q_type = q.get("type", "unknown") if isinstance(q, dict) else getattr(q, 'question_type', 'unknown')
-            q_diff = q.get("difficulty", "medium") if isinstance(q, dict) else getattr(q, 'difficulty', 'medium')
-            type_counts[q_type] = type_counts.get(q_type, 0) + 1
-            difficulty_counts[q_diff] = difficulty_counts.get(q_diff, 0) + 1
+        sa_samples = [q for q in sample_questions 
+                    if get_val(q, 'type', get_val(q, 'question_type', '')).lower() in ('short_answer', 'short')]
         
-        skill_content += f"### Distribution\n"
-        skill_content += f"- Types: {json.dumps(type_counts)}\n"
-        skill_content += f"- Difficulties: {json.dumps(difficulty_counts)}\n\n"
+        essay_samples = [q for q in sample_questions 
+                        if get_val(q, 'type', get_val(q, 'question_type', '')).lower() in ('essay', 'long_answer')]
         
-        skill_content += f"### Sample Questions (for few-shot reference)\n\n"
-        for i, q in enumerate(sample_questions[:10], 1):
-            content = q.get("content", "") if isinstance(q, dict) else getattr(q, 'question_text', '')
-            skill_content += f"**Example {i}:**\n{content}\n\n"
+        if mcq_samples:
+            skill_content += f"\n### MCQ Style ({len(mcq_samples)} examples)\n"
+            skill_content += "- Use scenario-based stems when possible\n"
+            skill_content += "- Distractors should represent common misconceptions\n"
+            for i, q in enumerate(mcq_samples[:5], 1):
+                content = get_val(q, 'content', get_val(q, 'question_text', ''))
+                skill_content += f"\nExample MCQ {i}:\n{content}\n"
         
-        # Save skill file
-        (skill_path / "SKILL.md").write_text(skill_content)
+        if sa_samples:
+            skill_content += f"\n### Short Answer Style ({len(sa_samples)} examples)\n"
+            for i, q in enumerate(sa_samples[:5], 1):
+                content = get_val(q, 'content', get_val(q, 'question_text', ''))
+                skill_content += f"\nExample SA {i}:\n{content}\n"
         
-        # Save notes if available
+        if essay_samples:
+            skill_content += f"\n### Essay Style ({len(essay_samples)} examples)\n"
+            for i, q in enumerate(essay_samples[:3], 1):
+                content = get_val(q, 'content', get_val(q, 'question_text', ''))
+                skill_content += f"\nExample Essay {i}:\n{content}\n"
+        
+        skill_content += f"""
+## Key Rules
+1. Questions MUST be answerable from the uploaded syllabus material
+2. DO NOT reference "the text", "chapter X", or "according to"
+3. Use clinical/practical scenarios appropriate to the discipline
+4. Vary question stems — no two questions should start the same way
+5. For MCQs, all options must be plausible and similar in length
+6. Map each question to the most relevant CO and LO listed above
+"""
+        
+        # Save files
+        with open(skill_path / "SKILL.md", "w") as f:
+            f.write(skill_content)
+        
         if notes_content:
             (skill_path / "notes.md").write_text(notes_content)
         

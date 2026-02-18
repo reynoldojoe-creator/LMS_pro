@@ -79,40 +79,59 @@ class RAGService:
 
     def retrieve_context(self, query_text: str, subject_id: str, n_results: int = 8, topic_id: str = None) -> str:
         """
-        Retrieves context string from the vector store for a given query.
+        Retrieves formatted context string from the vector store with quality filtering.
         """
         try:
-             # 1. Embed query
-            query_embedding = self.embedding_service.generate_embeddings([query_text])
+            # 1. Retrieve more results than needed (2x) to allow for filtering
+            raw_docs = self._raw_retrieve(query_text, subject_id, n_results=n_results * 2, topic_id=topic_id)
             
-            # 2. Retrieve from Vector Store
+            # 2. Filter out very short chunks (likely headers/TOC)
+            filtered = [doc for doc in raw_docs if len(doc) > 100]
+            
+            # 3. Deduplicate based on content similarity
+            unique_chunks = []
+            from difflib import SequenceMatcher
+            
+            for chunk in filtered:
+                is_dup = False
+                for existing in unique_chunks:
+                    # Check overlap. If > 70% similar, skip
+                    if SequenceMatcher(None, chunk[:200], existing[:200]).ratio() > 0.7:
+                        is_dup = True
+                        break
+                if not is_dup:
+                    unique_chunks.append(chunk)
+            
+            # 4. Return top n_results
+            final_chunks = unique_chunks[:n_results]
+            
+            return "\n\n---\n\n".join(final_chunks)
+            
+        except Exception as e:
+            logger.error(f"Error retrieving context: {e}")
+            # Fallback to empty context rather than crashing
+            return ""
+
+    def _raw_retrieve(self, query_text: str, subject_id: str, n_results: int, topic_id: str = None) -> List[str]:
+        """Helper to get raw documents from Chroma"""
+        try:
+            # Embed query
+            query_embedding = self.embedding_service.generate_embeddings([query_text])
             collection_name = f"subject_{subject_id}"
             
-            # Relaxed retrieval: Don't filter by topic_id strictly if it causes zero results.
-            # Ideally, we'd use an $or query, but Chroma's where clause is strict.
-            # To ensure we get context from syllabus (indexed by topic name) AND notes (indexed by topic_id),
-            # we'll omit the topic_id filter and rely on semantic similarity.
-            # This is "Fix 1" from the plan.
-            where_filter = None
-                
+            # We don't filter by topic_id strictly to allow broader context
             results = self.vector_store.query_similar(
                 collection_name=collection_name,
                 query_embeddings=query_embedding,
-                n_results=n_results,
-                where=where_filter
+                n_results=n_results
             )
             
-            # 3. Format context
-            context = ""
-            if results["documents"]:
-                 # Flatten list of lists if needed, currently assuming output is [ [doc1, doc2] ]
-                 docs = results["documents"][0] 
-                 context = "\n\n".join(docs)
-            
-            return context
+            if results and results.get("documents"):
+                return results["documents"][0]
+            return []
         except Exception as e:
-            logger.error(f"Error retrieving context: {e}")
-            raise
+            logger.error(f"Raw retrieval failed: {e}")
+            return []
 
     def query(self, query_text: str, subject_id: str, n_results: int = 8, topic_id: str = None) -> Dict[str, Any]:
         """

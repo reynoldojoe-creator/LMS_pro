@@ -432,8 +432,11 @@ OUTPUT FORMAT (strict JSON):
   ]
 }}"""
             
+            
         if skill_instructions:
-            prompt = f"{skill_instructions}\n\n{prompt}"
+            # Optimize skill instructions to save context
+            relevant_skill = self._extract_skill_section(skill_instructions, question_type)
+            prompt = f"{relevant_skill}\n\n{prompt}"
         
         # Direct single-call generation (replaces slow hybrid council)
         logger.info(f"Generating {count} {question_type} questions directly")
@@ -640,6 +643,163 @@ OUTPUT FORMAT (strict JSON):
         
         return file_path
     
+    # ===== ACTION 4: Unified Batch Generation (Multi-Type) =====
+    async def generate_mixed_batch(
+        self,
+        db: Session,
+        subject_id: int,
+        topic_id: int,
+        specs: List[Dict], # [{type, count, marks, difficulty}]
+        pre_retrieved_context: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Generate multiple question types in ONE LLM call.
+        1. Retrieve context (if not provided)
+        2. Construct Unified Prompt
+        3. Call LLM
+        4. Parse and return questions (NOT saved to DB here, separate step)
+        """
+        logger.info(f"Generating mixed batch for topic {topic_id}: {specs}")
+
+        # 1. Get topic metadata
+        topic = await self._get_topic_with_cos(db, subject_id, topic_id)
+        
+        subject = db.query(database.Subject).filter(database.Subject.id == subject_id).first()
+        subject_name = subject.name if subject else "Subject"
+
+        # 2. Context
+        if pre_retrieved_context:
+            context = pre_retrieved_context
+        else:
+            context = self.rag_service.retrieve_context(
+                query_text=topic['name'],
+                subject_id=str(subject_id),
+                n_results=10, # Deeper context for mixed generation
+                topic_id=str(topic_id)
+            )
+
+        # 3. Build Distribution Text for Prompt
+        # Example: 
+        # - 5 MCQ question(s) (1 marks each)
+        # - 2 Short Answer question(s) (5 marks each)
+        distribution_lines = []
+        total_questions = 0
+        overall_difficulty = "medium"
+        
+        for s in specs:
+            distribution_lines.append(f"- {s['count']} {s['type']} question(s) ({s.get('marks', 1)} marks)")
+            total_questions += s['count']
+            overall_difficulty = s.get('difficulty', overall_difficulty)
+
+        distribution_text = "\n".join(distribution_lines)
+
+        # 4. Construct Prompt
+        from ..prompts.generation_prompts import UNIFIED_GENERATION_PROMPT
+        
+        co_str = ", ".join(topic['co_mappings']) or "CO1"
+        lo_str = ", ".join(topic['lo_mappings']) or "LO1"
+        
+        # Add diversity seed
+        import random
+        diversity_seed = random.choice([
+            "Focus on clinical application scenarios",
+            "Focus on comparative analysis (differences/similarities)", 
+            "Focus on cause-and-effect relationships",
+            "Focus on diagnostic reasoning and steps",
+            "Focus on treatment planning and contraindications", 
+            "Focus on mechanism of action and underlying principles"
+        ])
+        
+        prompt = UNIFIED_GENERATION_PROMPT.format(
+            subject_name=subject_name,
+            rag_context=context[:6000], 
+            total_questions=total_questions,
+            topic=topic['name'],
+            distribution_text=distribution_text,
+            difficulty=overall_difficulty,
+            co=co_str,
+            lo=lo_str
+        )
+        
+        # Inject diversity instruction at the start
+        prompt = f"GENERATION FOCUS: {diversity_seed}\n\n" + prompt
+        
+        # 5. Call LLM
+        try:
+            result = await self.llm_service.generate(
+                prompt=prompt,
+                model=config.GENERATION_MODEL, 
+                temperature=0.7,
+                max_tokens=4000, 
+                expect_json=True
+            )
+            
+            questions = result.get("questions", [])
+            logger.info(f"Generated {len(questions)} questions in mixed batch")
+            
+            # Post-process: Ensure correct mapped CO/LO and types
+            final_questions = []
+            import re
+            
+            for q in questions:
+                # Normalize type
+                q_type = q.get("question_type", "mcq").lower()
+                if "choice" in q_type: q_type = "mcq"
+                elif "essay" in q_type or "long" in q_type: q_type = "essay"
+                elif "short" in q_type: q_type = "short_answer"
+                
+                q_text = q.get("question_text", "")
+                
+                # Cleanup: Remove "Chapter X" or "Textbook" references
+                if "Chapter" in q_text or "text" in q_text.lower():
+                    q_text = re.sub(
+                        r'(as (mentioned|described|stated) in (the )?(text|chapter|book)[\w\s,]*)',
+                        '', q_text, flags=re.IGNORECASE
+                    ).strip()
+                    # Clean up any leading punctuation left behind
+                    q_text = re.sub(r'^[,.\-]\s*', '', q_text).strip()
+                    # Capitalize first letter
+                    if q_text:
+                        q_text = q_text[0].upper() + q_text[1:]
+                    q["question_text"] = q_text
+
+                # Normalize options for MCQs
+                if q_type == "mcq" and "options" in q:
+                    # Remove prefixes "A) " etc if present
+                    opts = q["options"]
+                    if isinstance(opts, dict):
+                        new_opts = {}
+                        for k, v in opts.items():
+                             # Ensure value is string
+                            val_str = str(v)
+                            # Remove "A)", "A.", "(A)" prefix
+                            clean_val = re.sub(r'^[\(]?[A-D][\)\.]\s*', '', val_str).strip()
+                            new_opts[k] = clean_val
+                        q["options"] = new_opts
+
+
+                # Ensure CO/LO match request if missing
+                if not q.get("mapped_co"): q["mapped_co"] = co_str
+                if not q.get("mapped_lo"): q["mapped_lo"] = lo_str
+                
+                # Add RAG context for verification
+                q["rag_context"] = json.dumps([context]) 
+                
+                final_questions.append(q)
+                
+            return {
+                "questions": final_questions,
+                "metadata": {
+                    "topic": topic['name'],
+                    "generated_at": datetime.now().isoformat()
+                }
+            }
+
+        except Exception as e:
+            logger.error(f"Unified generation failed: {e}", exc_info=True)
+            # Fallback? No, just fail for now.
+            return {"questions": [], "error": str(e)}
+
     async def _extract_text(self, file_path: str) -> str:
         """Extract text from file"""
         if file_path.lower().endswith('.pdf'):
@@ -649,5 +809,73 @@ OUTPUT FORMAT (strict JSON):
         else:
             with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                 return f.read()
+
+    def _extract_skill_section(self, skill_text: str, question_type: str) -> str:
+        """
+        Extract only the relevant section from skill instructions to save context.
+        Always includes global rules, but filters type-specific examples.
+        """
+        lines = skill_text.split('\n')
+        relevant_lines = []
+        
+        # Always include Role, COs, LOs, and Key Rules
+        in_relevant = False
+        skip_until_next_heading = False
+        
+        for line in lines:
+            # Always include top-level instructions and Rule sections
+            if line.startswith('# ') or \
+               line.startswith('## Role') or \
+               line.startswith('## Course') or \
+               line.startswith('## Learning') or \
+               line.startswith('## Key Rules'):
+                in_relevant = True
+                skip_until_next_heading = False
+                relevant_lines.append(line)
+                continue
+            
+            # Check for specific question type sections
+            qt_lower = question_type.lower()
+            if '### MCQ' in line:
+                if qt_lower in ('mcq', 'multiple_choice'):
+                    in_relevant = True
+                    skip_until_next_heading = False
+                    relevant_lines.append(line)
+                else:
+                    skip_until_next_heading = True
+                    in_relevant = False
+                continue
+            elif '### Short' in line:
+                if qt_lower in ('short_answer', 'short'):
+                    in_relevant = True
+                    skip_until_next_heading = False
+                    relevant_lines.append(line)
+                else:
+                    skip_until_next_heading = True
+                    in_relevant = False
+                continue
+            elif '### Essay' in line:
+                if qt_lower in ('essay', 'long_answer'):
+                    in_relevant = True
+                    skip_until_next_heading = False
+                    relevant_lines.append(line)
+                else:
+                    skip_until_next_heading = True
+                    in_relevant = False
+                continue
+            elif line.startswith('### ') and in_relevant:
+                # We hit a different type section/unknown section
+                # If we are already in relevant mode, this might be a subsection we want?
+                # But if it looks like a type header, we should have caught it above.
+                # Let's assume other H3s are generic and keep them if in_relevant.
+                pass
+            
+            if in_relevant and not skip_until_next_heading:
+                relevant_lines.append(line)
+        
+        result = '\n'.join(relevant_lines)
+        # Limit to 1000 chars to save context window, but keep enough for rules
+        return result[:1200]
+
 
 topic_actions_service = TopicActionsService()

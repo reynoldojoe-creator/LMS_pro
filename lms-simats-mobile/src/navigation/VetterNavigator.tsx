@@ -16,6 +16,9 @@ import { ProfileScreen } from '../screens/common/ProfileScreen';
 import { QuestionPreviewScreen } from '../screens/faculty/QuestionPreviewScreen';
 import { GenerationResultsScreen } from '../screens/faculty/GenerationResultsScreen';
 
+// Custom components
+import { GlossyTabBar } from '../components/ios6/GlossyTabBar';
+
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
@@ -35,74 +38,46 @@ const ReviewNavigator = () => (
 );
 
 export const VetterNavigator = () => {
-    const { colors } = useAppTheme();
-
     return (
         <Tab.Navigator
+            tabBar={(props) => <GlossyTabBar {...props} />}
             screenOptions={{
                 headerShown: false,
-                tabBarActiveTintColor: colors.primary,
-                tabBarInactiveTintColor: colors.iosGray3,
-                tabBarStyle: {
-                    backgroundColor: colors.surface,
-                    borderTopColor: colors.divider,
-                    borderTopWidth: 1,
-                    paddingTop: spacing.xs,
-                    paddingBottom: spacing.sm,
-                    height: 60,
-                },
-                tabBarLabelStyle: {
-                    fontSize: 11,
-                    fontWeight: '500',
-                },
             }}
         >
             <Tab.Screen
                 name="ReviewQueue"
                 component={ReviewNavigator}
                 options={{
-                    tabBarLabel: 'Review',
-                    tabBarIcon: ({ color, size }) => (
-                        <Text style={{ fontSize: size, color }}>📋</Text>
-                    ),
+                    title: 'Queue',
+                    tabBarLabel: 'Queue'
                 }}
             />
             <Tab.Screen
                 name="Completed"
                 component={CompletedScreen}
                 options={{
-                    tabBarIcon: ({ color, size }) => (
-                        <Text style={{ fontSize: size, color }}>✓</Text>
-                    ),
+                    title: 'Completed',
+                    tabBarLabel: 'Completed',
+                    // Adding custom icon name mapping logic if needed in GlossyTabBar
                 }}
             />
             <Tab.Screen
                 name="Stats"
                 component={VetterStatsScreen}
                 options={{
-                    tabBarIcon: ({ color, size }) => (
-                        <Text style={{ fontSize: size, color }}>📊</Text>
-                    ),
+                    title: 'Stats',
+                    tabBarLabel: 'Stats'
+                }}
+            />
+            <Tab.Screen
+                name="Settings"
+                component={SettingsScreen}
+                options={{
+                    title: 'Settings',
+                    tabBarLabel: 'Settings'
                 }}
             />
         </Tab.Navigator>
     );
 };
-
-const styles = StyleSheet.create({
-    placeholder: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: colors.background,
-    },
-    placeholderText: {
-        ...typography.h2,
-        color: colors.textPrimary,
-        marginBottom: spacing.sm,
-    },
-    placeholderSubtext: {
-        ...typography.body,
-        color: colors.textSecondary,
-    },
-});

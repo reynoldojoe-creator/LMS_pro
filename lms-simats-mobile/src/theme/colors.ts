@@ -1,32 +1,48 @@
 // Light Theme (iOS 6 Style)
 export const colors = {
     // iOS 6 Classic Palette
-    primary: '#4A90D9', // Soft iOS 6 Blue
-    primaryLight: '#73B4FF',
-    primaryDark: '#3570B0',
+    // iOS 6 Palette
+    ios: {
+        // Backgrounds
+        linen: '#C5BDB4', // Classic linen texture base
+        linenDark: '#3A3A3A', // Notification center / folder style
 
-    // Backgrounds
-    background: '#F0F0F5', // Light gray-white (Linen base)
-    surface: '#FFFFFF',    // Pure white
-    card: '#FFFFFF',
+        // Gradients (Start -> End)
+        blueGradient: ['#B0C8E8', '#6D9DD1'], // Standard nav bar
+        darkBlueGradient: ['#3E6FA7', '#204060'], // Active states
+        redGradient: ['#E8A0A0', '#C04040'], // Destructive actions
+        greenGradient: ['#A0E8A0', '#40C040'], // Success actions
+        grayGradient: ['#F0F0F0', '#D0D0D0'], // Standard buttons
+        orangeGradient: ['#FFCC80', '#FFA726'], // Warning/Reports
 
-    // Text
-    textPrimary: '#333333',
-    textSecondary: '#8E8E93',
-    textTertiary: '#B2B2B2',
-    textInverse: '#FFFFFF',
-    textShadow: 'rgba(255, 255, 255, 0.7)', // Etched text effect
+        // Shadows
+        textShadow: 'rgba(255, 255, 255, 0.5)', // Embossed effect
+        textShadowDark: 'rgba(0, 0, 0, 0.4)', // Nav bar title
 
-    // Status
-    success: '#4CD964',
-    warning: '#FF9500',
-    error: '#FF3B30',
-    info: '#5AC8FA',
+        // Borders
+        border: '#C8C7CC', // Grouped table separator
+        borderLight: 'rgba(255,255,255,0.6)',
+        borderDark: '#999',
 
-    // UI Elements
-    divider: '#C8C7CC', // Classic iOS divider
+        // Text
+        headerText: '#4C566C', // Grouped table headers
+        bodyText: '#000000',
+        detailText: '#8E8E93',
+        blueText: '#3E6FA7'
+    },
+
+    // Legacy aliases (mapped to new style where possible or kept for compatibility)
+    primary: '#3E6FA7', // Reduced saturation blue
+    background: '#C5BDB4', // Linen
+    text: '#000000',
     border: '#C8C7CC',
-    disabled: '#EFEFF4',
+    notification: '#FF3B30',
+
+    // Semantic
+    success: '#4CD964',
+    error: '#FF3B30',
+    warning: '#FF9500',
+    info: '#5AC8FA',
 
     // Gradients & Textures (Simulated)
     headerGradientTop: '#F8F8F9',

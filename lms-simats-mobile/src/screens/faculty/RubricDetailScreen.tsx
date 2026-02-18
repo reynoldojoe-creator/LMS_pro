@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { useRubricStore, useFacultyStore } from '../../store';
-import { Button, Tag, Header } from '../../components/common';
+import { LinenBackground, GlossyNavBar, GlossyCard, GlossyButton } from '../../components/ios6';
+import { Ionicons } from '@expo/vector-icons';
 
 type Props = NativeStackScreenProps<any, 'RubricDetail'>;
 
@@ -18,9 +18,12 @@ export const RubricDetailScreen = ({ route, navigation }: Props) => {
 
     if (!rubric) {
         return (
-            <SafeAreaView style={styles.container}>
-                <Text>Rubric not found</Text>
-            </SafeAreaView>
+            <LinenBackground>
+                <GlossyNavBar title="Rubric Detail" showBack onBack={() => navigation.goBack()} />
+                <View style={styles.center}>
+                    <Text>Rubric not found</Text>
+                </View>
+            </LinenBackground>
         );
     }
 
@@ -36,17 +39,14 @@ export const RubricDetailScreen = ({ route, navigation }: Props) => {
     };
 
     const handleGenerate = async () => {
-        if (isGenerating) return; // Prevent double-clicks
+        if (isGenerating) return;
 
         setIsGenerating(true);
         try {
-            console.log('Starting question generation for rubric:', rubric.id);
             const questions = await generateFromRubric(rubric.id);
-            console.log('Generation complete, questions:', questions.length);
             setIsGenerating(false);
             navigation.navigate('GenerationResults', { generatedQuestions: questions });
         } catch (error: any) {
-            console.error('Generation error:', error);
             setIsGenerating(false);
             Alert.alert(
                 'Generation Failed',
@@ -57,25 +57,33 @@ export const RubricDetailScreen = ({ route, navigation }: Props) => {
     };
 
     const handleViewResults = () => {
-        // Pass rubricId to let Results screen fetch if needed
         navigation.navigate('GenerationResults', { rubricId: rubric.id });
     };
 
+    // Normalize sections to array format
+    const sec = rubric.sections;
+    const sectionsArr = !sec ? []
+        : Array.isArray(sec) ? sec
+            : typeof sec === 'object'
+                ? Object.entries(sec).map(([type, val]: [string, any]) => ({ type, ...val, id: type }))
+                : [];
+
     return (
-        <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
-            <Header
+        <LinenBackground>
+            <GlossyNavBar
                 title="Rubric Details"
+                showBack
                 onBack={() => navigation.goBack()}
-                rightAction={
+                rightButton={
                     <TouchableOpacity onPress={handleEdit}>
-                        <Text style={styles.editText}>Edit</Text>
+                        <Text style={styles.navText}>Edit</Text>
                     </TouchableOpacity>
                 }
             />
 
-            <ScrollView>
+            <ScrollView contentContainerStyle={styles.content}>
                 {/* Rubric Info */}
-                <View style={styles.infoSection}>
+                <GlossyCard title="Overview">
                     <Text style={styles.title}>{rubric.title}</Text>
                     <Text style={styles.subject}>
                         {subject ? `${subject.code} - ${subject.name}` : 'Unknown Subject'}
@@ -97,44 +105,30 @@ export const RubricDetailScreen = ({ route, navigation }: Props) => {
                             <Text style={styles.statLabel}>Questions</Text>
                         </View>
                     </View>
-                </View>
+                </GlossyCard>
 
                 {/* Sections */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Question Distribution</Text>
-                    {(() => {
-                        // Normalize sections to array format
-                        const sec = rubric.sections;
-                        const sectionsArr = !sec ? []
-                            : Array.isArray(sec) ? sec
-                                : typeof sec === 'object'
-                                    ? Object.entries(sec).map(([type, val]: [string, any]) => ({ type, ...val, id: type }))
-                                    : [];
-                        return sectionsArr.map((section: any, index: number) => (
-                            <View key={section.id || section.type || index} style={styles.sectionCard}>
-                                <View style={styles.sectionHeader}>
-                                    <Text style={styles.sectionName}>
-                                        Section {String.fromCharCode(65 + index)}: {(section.type || '').toUpperCase()}
-                                    </Text>
-                                    <Text style={styles.sectionMarks}>
-                                        {(section.count || 0) * (section.marksEach || section.marks_each || 0)} marks
-                                    </Text>
-                                </View>
-                                <Text style={styles.sectionDetail}>
-                                    {section.count || 0} questions × {section.marksEach || section.marks_each || 0} marks each
-                                </Text>
-                                {section.choice && (
-                                    <Text style={styles.sectionChoice}>
-                                        Choice: {section.choice.replace('_', ' ')}
-                                    </Text>
-                                )}
-                            </View>
-                        ));
-                    })()}
-                </View>
-
-                {/* Bloom's Distribution */}
-
+                <Text style={styles.sectionHeader}>QUESTION DISTRIBUTION</Text>
+                {sectionsArr.map((section: any, index: number) => (
+                    <GlossyCard key={section.id || section.type || index}>
+                        <View style={styles.sectionHeaderRow}>
+                            <Text style={styles.sectionName}>
+                                Section {String.fromCharCode(65 + index)}: {(section.type || '').toUpperCase()}
+                            </Text>
+                            <Text style={styles.sectionMarks}>
+                                {(section.count || 0) * (section.marksEach || section.marks_each || 0)} marks
+                            </Text>
+                        </View>
+                        <Text style={styles.sectionDetail}>
+                            {section.count || 0} questions × {section.marksEach || section.marks_each || 0} marks each
+                        </Text>
+                        {section.choice && (
+                            <Text style={styles.sectionChoice}>
+                                Choice: {section.choice.replace('_', ' ')}
+                            </Text>
+                        )}
+                    </GlossyCard>
+                ))}
 
                 {/* Actions */}
                 <View style={styles.actionSection}>
@@ -143,15 +137,13 @@ export const RubricDetailScreen = ({ route, navigation }: Props) => {
                             {isGenerating ? (
                                 <View style={styles.loadingContainer}>
                                     <ActivityIndicator size="large" color={colors.primary} />
-                                    <Text style={styles.loadingText}>Generating questions... This may take 30-60 seconds</Text>
+                                    <Text style={styles.loadingText}>Generating questions...</Text>
                                 </View>
                             ) : (
-                                <Button
+                                <GlossyButton
                                     title="Generate Questions"
                                     onPress={handleGenerate}
-                                    variant="primary"
-                                    fullWidth
-                                    size="lg"
+                                    style={{ marginBottom: 20 }}
                                 />
                             )}
                         </>
@@ -159,87 +151,55 @@ export const RubricDetailScreen = ({ route, navigation }: Props) => {
                     {rubric.status === 'generated' && (
                         <>
                             <Text style={styles.generatedText}>
-                                ✓ Questions generated on {new Date(rubric.generatedAt!).toLocaleDateString()}
+                                ✓ Generated on {rubric.generatedAt ? new Date(rubric.generatedAt).toLocaleDateString() : 'Unknown Date'}
                             </Text>
-                            <View style={styles.actionGap} />
-                            <Button
+                            <GlossyButton
                                 title="View Generated Questions"
                                 onPress={handleViewResults}
-                                variant="outline"
-                                fullWidth
-                                size="lg"
+                                style={{ marginTop: 10 }}
                             />
                         </>
                     )}
                 </View>
+
+                <View style={{ height: 40 }} />
             </ScrollView>
-        </SafeAreaView>
+        </LinenBackground>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.background,
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    content: {
+        paddingBottom: spacing.xl,
+        paddingTop: spacing.md,
     },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: spacing.screenHorizontal,
-        paddingVertical: spacing.md,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: colors.divider,
-        backgroundColor: colors.surface,
-    },
-    backButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
-    },
-    backChevron: {
-        fontSize: 32,
-        color: colors.primary,
-        fontWeight: '300',
-        marginRight: -4,
-    },
-    backText: {
-        ...typography.body,
-        color: colors.primary,
-    },
-    headerTitle: {
-        ...typography.navTitle,
-        color: colors.textPrimary,
-        flex: 1,
-        textAlign: 'center',
-    },
-    editText: {
-        ...typography.body,
-        color: colors.primary,
-        flex: 1,
-        textAlign: 'right',
-    },
-    infoSection: {
-        padding: spacing.lg,
-        backgroundColor: colors.surface,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: colors.divider,
+    navText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 16,
+        textShadowColor: 'rgba(0,0,0,0.5)',
+        textShadowOffset: { width: 0, height: -1 },
+        textShadowRadius: 0,
     },
     title: {
         ...typography.h2,
         color: colors.textPrimary,
         marginBottom: spacing.xs,
+        textAlign: 'center',
     },
     subject: {
         ...typography.body,
         color: colors.textSecondary,
         marginBottom: spacing.md,
+        textAlign: 'center',
     },
     statsRow: {
         flexDirection: 'row',
-        backgroundColor: colors.iosGray6,
-        borderRadius: borderRadius.md,
-        padding: spacing.md,
+        justifyContent: 'center',
+        paddingTop: spacing.sm,
+        borderTopWidth: 1,
+        borderTopColor: colors.iosGray4,
     },
     statBox: {
         flex: 1,
@@ -256,109 +216,63 @@ const styles = StyleSheet.create({
     },
     statDivider: {
         width: 1,
+        height: 30,
         backgroundColor: colors.divider,
         marginHorizontal: spacing.sm,
     },
-    section: {
-        marginTop: spacing.lg,
-        marginHorizontal: spacing.screenHorizontal,
-    },
-    sectionTitle: {
-        ...typography.h3,
-        color: colors.textPrimary,
-        marginBottom: spacing.sm,
-    },
-    sectionCard: {
-        backgroundColor: colors.surface,
-        padding: spacing.md,
-        borderRadius: borderRadius.md,
-        borderWidth: 1,
-        borderColor: colors.border,
-        marginBottom: spacing.sm,
-    },
     sectionHeader: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#4C566C',
+        marginTop: spacing.lg,
+        marginBottom: spacing.sm,
+        marginLeft: spacing.lg,
+        textShadowColor: 'rgba(255,255,255,0.5)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 0,
+    },
+    sectionHeaderRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginBottom: spacing.xs,
     },
     sectionName: {
-        ...typography.bodyBold,
-        color: colors.textPrimary,
+        fontWeight: 'bold',
+        fontSize: 16,
+        color: '#333',
     },
     sectionMarks: {
-        ...typography.bodyBold,
+        fontWeight: 'bold',
         color: colors.primary,
     },
     sectionDetail: {
-        ...typography.caption,
-        color: colors.textSecondary,
+        fontSize: 14,
+        color: '#666',
     },
     sectionChoice: {
-        ...typography.caption,
-        color: colors.textSecondary,
+        fontSize: 13,
+        color: '#888',
         fontStyle: 'italic',
-        marginTop: spacing.xs,
-    },
-    card: {
-        backgroundColor: colors.surface,
-        padding: spacing.md,
-        borderRadius: borderRadius.md,
-        borderWidth: 1,
-        borderColor: colors.border,
-    },
-    distributionRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: spacing.sm,
-    },
-    distributionLabel: {
-        ...typography.body,
-        color: colors.textPrimary,
-        width: 100,
-    },
-    progressBar: {
-        flex: 1,
-        height: 8,
-        backgroundColor: colors.iosGray5,
-        borderRadius: borderRadius.full,
-        overflow: 'hidden',
-        marginHorizontal: spacing.sm,
-    },
-    progressFill: {
-        height: '100%',
-        backgroundColor: colors.primary,
-    },
-    distributionValue: {
-        ...typography.caption,
-        color: colors.textSecondary,
-        width: 40,
-        textAlign: 'right',
+        marginTop: 4,
     },
     actionSection: {
         padding: spacing.lg,
-        marginTop: spacing.lg,
-    },
-    generatedText: {
-        ...typography.body,
-        color: colors.success,
-        textAlign: 'center',
-        marginBottom: spacing.sm,
-    },
-    actionGap: {
-        height: spacing.md,
-    },
-    loadingContainer: {
-        alignItems: 'center',
-        padding: spacing.lg,
-        backgroundColor: colors.surface,
-        borderRadius: borderRadius.md,
-        borderWidth: 1,
-        borderColor: colors.border,
-    },
-    loadingText: {
-        ...typography.body,
-        color: colors.textSecondary,
-        textAlign: 'center',
         marginTop: spacing.md,
     },
+    generatedText: {
+        textAlign: 'center',
+        color: colors.success,
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    loadingContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 20,
+    },
+    loadingText: {
+        marginLeft: 10,
+        color: '#555',
+    }
 });

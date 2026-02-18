@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { colors, typography, spacing, borderRadius } from '../../theme';
 import { useRubricStore } from '../../store';
 import { useFacultyStore } from '../../store';
-import { SegmentedControl, EmptyState, LoadingSpinner, Tag } from '../../components/common';
+import { LoadingSpinner } from '../../components/common';
+import { LinenBackground, GlossyNavBar, GlossyCard, GlossyButton } from '../../components/ios6';
+import { colors, spacing } from '../../theme';
+import { Ionicons } from '@expo/vector-icons';
 
 type Props = NativeStackScreenProps<any, 'RubricsList'>;
 
@@ -22,7 +23,7 @@ export const RubricsListScreen = ({ navigation }: Props) => {
     }, []);
 
     const filterStatus = STATUS_FILTERS[selectedFilter].toLowerCase();
-    const filteredRubrics = rubrics.filter(r => r.status === filterStatus);
+    const filteredRubrics = rubrics.filter(r => r.status === filterStatus || (filterStatus === 'drafts' && r.status === 'draft'));
 
     const handleAddRubric = () => {
         navigation.navigate('RubricSubjectSelection');
@@ -52,6 +53,7 @@ export const RubricsListScreen = ({ navigation }: Props) => {
         return subject ? `${subject.code} - ${subject.name}` : 'Unknown Subject';
     };
 
+    // Helper to calculate total questions if sections structure varies
     const getTotalQuestions = (rubric: any) => {
         const s = rubric.sections;
         if (!s) return 0;
@@ -60,217 +62,204 @@ export const RubricsListScreen = ({ navigation }: Props) => {
         return 0;
     };
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'draft': return colors.iosGray;
-            case 'created': return colors.primary;
-            case 'generated': return colors.success;
-            default: return colors.textSecondary;
-        }
-    };
-
-    const getStatusLabel = (status: string) => {
-        switch (status) {
-            case 'draft': return 'Draft';
-            case 'created': return 'Ready to Generate';
-            case 'generated': return 'Generated';
-            default: return status;
-        }
-    };
-
     if (isLoading && rubrics.length === 0) {
-        return <LoadingSpinner fullScreen />;
+        return (
+            <LinenBackground>
+                <GlossyNavBar title="Rubrics" />
+                <View style={styles.center}>
+                    <LoadingSpinner />
+                </View>
+            </LinenBackground>
+        );
     }
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
-            {/* Header */}
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Exam Rubrics</Text>
-                <TouchableOpacity style={styles.addButton} onPress={handleAddRubric}>
-                    <Text style={styles.addButtonText}>+</Text>
-                </TouchableOpacity>
-            </View>
+        <LinenBackground>
+            <GlossyNavBar
+                title="Exam Rubrics"
+                showBack
+                onBack={() => navigation.goBack()}
+                rightButton={
+                    <TouchableOpacity onPress={handleAddRubric}>
+                        <Ionicons name="add" size={28} color="white" style={styles.navIcon} />
+                    </TouchableOpacity>
+                }
+            />
 
-            {/* Filter */}
+            {/* Filter Segmented Control Replacement - Custom Tab Bar */}
             <View style={styles.filterContainer}>
-                <SegmentedControl
-                    segments={STATUS_FILTERS}
-                    selectedIndex={selectedFilter}
-                    onChange={setSelectedFilter}
-                />
+                {STATUS_FILTERS.map((filter, index) => (
+                    <TouchableOpacity
+                        key={filter}
+                        style={[styles.filterTab, selectedFilter === index && styles.filterTabSelected]}
+                        onPress={() => setSelectedFilter(index)}
+                    >
+                        <Text style={[styles.filterText, selectedFilter === index && styles.filterTextSelected]}>
+                            {filter}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
             </View>
 
-            {/* Rubrics List */}
-            <ScrollView style={styles.scrollView}>
+            <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
                 {filteredRubrics.length === 0 ? (
-                    <EmptyState
-                        icon="📋"
-                        title={`No ${STATUS_FILTERS[selectedFilter]}`}
-                        description="Create a new exam rubric to get started"
-                        actionLabel="Create Rubric"
-                        onAction={handleAddRubric}
-                    />
+                    <View style={styles.emptyState}>
+                        <Text style={styles.emptyText}>No {STATUS_FILTERS[selectedFilter]} Rubrics</Text>
+                        <GlossyButton title="Create New Rubric" onPress={handleAddRubric} style={styles.createButton} />
+                    </View>
                 ) : (
-                    <View style={styles.rubricsList}>
-                        {filteredRubrics.map((rubric) => (
+                    filteredRubrics.map((rubric) => (
+                        <GlossyCard key={rubric.id} title={rubric.title}>
                             <TouchableOpacity
-                                key={rubric.id}
-                                style={styles.rubricCard}
                                 onPress={() => handleRubricPress(rubric.id)}
                                 onLongPress={() => handleDeleteRubric(rubric.id)}
-                                activeOpacity={0.7}
                             >
-                                <View style={styles.rubricHeader}>
-                                    <Text style={styles.rubricTitle}>{rubric.title}</Text>
-                                </View>
+                                <Text style={styles.subjectName}>{getSubjectName(rubric.subjectId)}</Text>
+                                <Text style={styles.metaText}>
+                                    {rubric.totalMarks} Marks • {rubric.duration} Mins • {getTotalQuestions(rubric)} Qs
+                                </Text>
 
-                                <Text style={styles.rubricSubject}>{getSubjectName(rubric.subjectId)}</Text>
-
-                                <View style={styles.rubricMeta}>
-                                    <Text style={styles.metaText}>
-                                        {rubric.totalMarks} marks • {rubric.duration} min • {getTotalQuestions(rubric)} Qs
-                                    </Text>
-                                </View>
-
-                                <View style={styles.rubricFooter}>
-                                    <View style={styles.statusRow}>
-                                        <View style={[styles.statusDot, { backgroundColor: getStatusColor(rubric.status) }]} />
-                                        <Text style={styles.statusText}>{getStatusLabel(rubric.status)}</Text>
+                                <View style={styles.footer}>
+                                    <View style={[
+                                        styles.statusBadge,
+                                        rubric.status === 'generated' ? styles.statusGenerated : styles.statusDraft
+                                    ]}>
+                                        <Text style={styles.statusText}>{rubric.status.toUpperCase()}</Text>
                                     </View>
 
                                     {rubric.status === 'created' && (
-                                        <TouchableOpacity
-                                            style={styles.generateButton}
-                                            onPress={(e) => {
-                                                e.stopPropagation();
-                                                navigation.navigate('RubricDetail', { rubricId: rubric.id });
-                                            }}
-                                        >
-                                            <Text style={styles.generateButtonText}>Generate ▶</Text>
-                                        </TouchableOpacity>
+                                        <GlossyButton
+                                            title="Generate"
+                                            onPress={() => navigation.navigate('RubricDetail', { rubricId: rubric.id })}
+                                            size="small"
+                                        />
                                     )}
                                 </View>
-
-                                <Text style={styles.createdDate}>
-                                    Created: {new Date(rubric.createdAt).toLocaleDateString('en-US', {
-                                        month: 'short',
-                                        day: 'numeric',
-                                        year: 'numeric'
-                                    })}
-                                </Text>
                             </TouchableOpacity>
-                        ))}
-                    </View>
+                        </GlossyCard>
+                    ))
                 )}
             </ScrollView>
-        </SafeAreaView>
+        </LinenBackground>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    center: {
         flex: 1,
-        backgroundColor: colors.background,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: spacing.screenHorizontal,
-        paddingVertical: spacing.md,
-    },
-    headerTitle: {
-        ...typography.h2,
-        color: colors.textPrimary,
-    },
-    addButton: {
-        width: 36,
-        height: 36,
-        borderRadius: borderRadius.full,
-        backgroundColor: colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    addButtonText: {
-        fontSize: 24,
-        color: colors.textInverse,
-        fontWeight: '300',
+    navIcon: {
+        textShadowColor: 'rgba(0,0,0,0.5)',
+        textShadowOffset: { width: 0, height: -1 },
+        textShadowRadius: 0,
     },
     filterContainer: {
-        paddingHorizontal: spacing.screenHorizontal,
-        marginBottom: spacing.md,
+        flexDirection: 'row',
+        padding: spacing.md,
+        backgroundColor: 'rgba(0,0,0,0.1)',
+        marginHorizontal: spacing.md,
+        marginTop: spacing.md,
+        borderRadius: borderRadius.md,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+        shadowColor: 'white',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 0,
+    },
+    filterTab: {
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: 6,
+        borderRadius: borderRadius.sm,
+    },
+    filterTabSelected: {
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        shadowColor: 'black',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2, // inner shadow simulation? no, drop shadow
+        // To simulate inner shadow in RN is hard, just use darker bg
+    },
+    filterText: {
+        color: '#4C566C',
+        fontWeight: 'bold',
+        fontSize: 13,
+        textShadowColor: 'rgba(255,255,255,0.5)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 0,
+    },
+    filterTextSelected: {
+        color: 'white',
+        textShadowColor: 'rgba(0,0,0,0.5)',
+        textShadowOffset: { width: 0, height: -1 },
+        textShadowRadius: 0,
     },
     scrollView: {
         flex: 1,
+        marginTop: spacing.sm,
     },
-    rubricsList: {
-        padding: spacing.screenHorizontal,
+    contentContainer: {
+        paddingBottom: spacing.xl,
     },
-    rubricCard: {
-        backgroundColor: colors.surface,
-        padding: spacing.cardPadding,
-        borderRadius: borderRadius.lg,
-        borderWidth: 1,
-        borderColor: colors.border,
-        marginBottom: spacing.md,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        elevation: 2,
+    emptyState: {
+        padding: spacing.xl,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: spacing.xl,
     },
-    rubricHeader: {
-        marginBottom: spacing.xs,
+    emptyText: {
+        color: '#666',
+        fontSize: 16,
+        marginBottom: spacing.lg,
+        fontStyle: 'italic',
+        textShadowColor: 'white',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 0,
     },
-    rubricTitle: {
-        ...typography.h3,
-        color: colors.textPrimary,
+    createButton: {
+        minWidth: 200,
     },
-    rubricSubject: {
-        ...typography.body,
-        color: colors.textSecondary,
-        marginBottom: spacing.sm,
-    },
-    rubricMeta: {
-        marginBottom: spacing.md,
+    subjectName: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 4,
     },
     metaText: {
-        ...typography.caption,
-        color: colors.textSecondary,
+        fontSize: 13,
+        color: '#666',
+        marginBottom: spacing.md,
     },
-    rubricFooter: {
+    footer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: spacing.sm,
+        marginTop: spacing.sm,
+        borderTopWidth: 1,
+        borderTopColor: '#EEE',
+        paddingTop: spacing.sm,
     },
-    statusRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
+    statusBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 10,
+        backgroundColor: '#DDD',
     },
-    statusDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        marginRight: spacing.xs,
+    statusGenerated: {
+        backgroundColor: '#E0F8E0',
+        borderWidth: 1,
+        borderColor: '#B0E0B0',
+    },
+    statusDraft: {
+        backgroundColor: '#F0F0F0',
+        borderWidth: 1,
+        borderColor: '#E0E0E0',
     },
     statusText: {
-        ...typography.caption,
-        color: colors.textSecondary,
-    },
-    generateButton: {
-        backgroundColor: colors.primary,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.xs,
-        borderRadius: borderRadius.sm,
-    },
-    generateButtonText: {
-        ...typography.captionBold,
-        color: colors.textInverse,
-    },
-    createdDate: {
-        ...typography.caption,
-        color: colors.textTertiary,
+        fontSize: 10,
+        fontWeight: 'bold',
+        color: '#555',
     },
 });

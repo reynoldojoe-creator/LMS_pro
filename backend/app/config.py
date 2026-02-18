@@ -9,30 +9,30 @@ os.environ['HF_HUB_OFFLINE'] = '1'
 os.environ['TRANSFORMERS_OFFLINE'] = '1'
 
 # Primary model (largest, best quality — use when RAM allows)
-PRIMARY_MODEL = "llama3.2:3b"
+PRIMARY_MODEL = "qwen2.5:3b"
 
 # Generation model (question generation — good balance of quality & RAM)
-GENERATION_MODEL = "llama3.2:3b"
+GENERATION_MODEL = "qwen2.5:3b"
 
 # Extraction model (syllabus parsing — fast, good at structured output)
 # Using Qwen 2.5 1.5B for better structured output
 EXTRACTION_MODEL = "qwen2.5:1.5b"
 
 # Fallback model (smallest usable)
-FALLBACK_MODEL = "llama3.2:1b"
-FAST_GENERATION_MODEL = "llama3.2:1b"
+FALLBACK_MODEL = "qwen2.5:1.5b"
+FAST_GENERATION_MODEL = "qwen2.5:1.5b"
 
 # Semantic model (for structure detection/textbook processing)
-SEMANTIC_MODEL = "llama3.2:3b"
+SEMANTIC_MODEL = "qwen2.5:3b"
 
 # Upskill Models
 UPSKILL_MODEL = "qwen2.5:3b"
 CHAIRMAN_MODEL = "qwen2.5:3b"
 
 # Performance settings
-OLLAMA_NUM_THREAD = 4
-OLLAMA_CONTEXT_SIZE = 2048 # Reduced from 4096 for speed
-MAX_TOKENS = 800 # Reduced from 1000
+OLLAMA_NUM_THREAD = 6  # Optimized for M2 Air (8 cores)
+OLLAMA_CONTEXT_SIZE = 2048 # Keep moderate for speed
+MAX_TOKENS = 800 
 TEMPERATURE = 0.7
 
 # Legacy aliases for backward compatibility
@@ -42,22 +42,22 @@ FAST_LLM_MODEL = GENERATION_MODEL
 # Model capabilities
 MODEL_CAPABILITIES = {
     "llama3.2:1b": {
-        "max_context": 128000, # Llama 3.2 supports large context
+        "max_context": 128000, 
         "json_reliable": True,
         "best_for": ["mcq", "short_answer", "essay", "extraction"],
-        "avg_tokens_per_second": 50,  # Fast!
+        "avg_tokens_per_second": 50,
     },
-    "qwen2.5:7b": {
-        "max_context": 8192,
+    "qwen2.5:3b": {
+        "max_context": 32768,
         "json_reliable": True,
-        "best_for": ["mcq", "short_answer", "essay"],
-        "avg_tokens_per_second": 25,  # On M2 8GB
+        "best_for": ["mcq", "short_answer", "essay", "reasoning"],
+        "avg_tokens_per_second": 35,  
     },
-    "phi3.5:latest": {
-        "max_context": 4096,
+    "qwen2.5:1.5b": {
+        "max_context": 32768,
         "json_reliable": True,
-        "best_for": ["mcq", "short_answer"],
-        "avg_tokens_per_second": 40,
+        "best_for": ["extraction", "fast_generation"],
+        "avg_tokens_per_second": 55,
     }
 }
 
@@ -83,7 +83,7 @@ GENERATION_SETTINGS = {
 # Ollama settings
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 LLM_BASE_URL = OLLAMA_BASE_URL # Legacy alias
-OLLAMA_TIMEOUT = 300  # 5 minutes for slow generation
+OLLAMA_TIMEOUT = 120  # Reduced to 2 minutes for faster fail/retry
 
 # RAG Configuration
 EMBEDDING_MODEL = "nomic-embed-text"

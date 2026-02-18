@@ -6,6 +6,12 @@ export const spacing = {
     xl: 32,
     xxl: 48,
 
+    // iOS 6 Specifics
+    iosHeaderHeight: 44,
+    iosHeaderPaddingTop: 44, // For status bar overlap if needed
+    cornerRadius: 10,
+    glossHeight: 0.5, // Percentage for gloss overlay
+
     // Screen padding
     screenHorizontal: 16,
     screenVertical: 16,

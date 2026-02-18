@@ -1,26 +1,37 @@
-import React, { useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
+import React, { useCallback, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { typography, spacing, borderRadius } from '../../theme';
-import { useFacultyStore, useAuthStore } from '../../store';
+import { StackNavigationProp } from '@react-navigation/stack';
+
+import { useFacultyStore } from '../../store/facultyStore';
+import { useAuthStore } from '../../store/authStore';
 import { useAppTheme } from '../../hooks';
+import { spacing, typography, borderRadius } from '../../theme';
+
+// iOS 6 Components
+import { LinenBackground } from '../../components/ios6/LinenBackground';
+import { GlossyNavBar } from '../../components/ios6/GlossyNavBar';
 import { StatCard } from '../../components/faculty/StatCard';
-import { GroupedList, LoadingSkeleton, ErrorState } from '../../components/common';
-import type { GroupedListSection } from '../../components/common';
+import { AppIcon } from '../../components/ios6/AppIcon';
+import { GlossyCard } from '../../components/ios6/GlossyCard';
 
-type Props = NativeStackScreenProps<any, 'Dashboard'>;
+type DashboardNavigationProp = StackNavigationProp<any>;
 
-export const DashboardScreen = ({ navigation }: Props) => {
-    const { user } = useAuthStore();
-    const { stats, recentActivity, isLoadingSubjects: isLoadingDashboard, error, fetchDashboard } = useFacultyStore();
+export const DashboardScreen = () => {
+    const navigation = useNavigation<DashboardNavigationProp>();
     const { colors } = useAppTheme();
-    const styles = getStyles(colors);
+    const { user } = useAuthStore();
+    const {
+        stats,
+        recentActivity,
+        isLoadingSubjects: isLoading,
+        fetchDashboard
+    } = useFacultyStore();
 
     useEffect(() => {
         fetchDashboard();
-    }, []);
+    }, [fetchDashboard]);
 
     const onRefresh = useCallback(() => {
         fetchDashboard();
@@ -33,225 +44,218 @@ export const DashboardScreen = ({ navigation }: Props) => {
         return 'Good Evening';
     };
 
-    const formatTimestamp = (timestampString: string | Date) => {
-        const timestamp = typeof timestampString === 'string' ? new Date(timestampString) : timestampString;
-        const now = Date.now();
-        const diff = now - timestamp.getTime();
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-
-        if (hours < 1) return 'Just now';
-        if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-        const days = Math.floor(hours / 24);
-        if (days === 1) return 'Yesterday';
-        return `${days} days ago`;
+    const formatTimestamp = (date: Date | string) => {
+        if (!date) return '';
+        const d = new Date(date);
+        return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
-    const quickActionsSections: GroupedListSection[] = [
-        {
-            title: 'Quick Actions',
-            data: [
-                {
-                    id: '1',
-                    label: 'Add New Subject',
-                    icon: '📚',
-                    showChevron: true,
-                    onPress: () => navigation.navigate('Subjects', { screen: 'AddSubject' }),
-                },
-
-                {
-                    id: '3',
-                    label: 'Create Exam Rubric',
-                    icon: '📋',
-                    showChevron: true,
-                    onPress: () => navigation.navigate('Rubrics', { screen: 'CreateRubric' }),
-                },
-            ],
-        },
-    ];
-
-    if (error && !stats) {
-        return (
-            <SafeAreaView style={styles.container} edges={['top']}>
-                <ErrorState
-                    message={error}
-                    onRetry={fetchDashboard}
-                />
-            </SafeAreaView>
-        );
-    }
-
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
-            <ScrollView
-                refreshControl={
-                    <RefreshControl refreshing={isLoadingDashboard} onRefresh={onRefresh} tintColor={colors.primary} />
-                }
-            >
-                {/* Header */}
-                <View style={styles.header}>
-                    <View>
-                        <Text style={styles.greeting}>{getGreeting()}, {user?.name || 'Faculty'}</Text>
-                    </View>
-                    <TouchableOpacity
-                        style={styles.settingsButton}
-                        onPress={() => navigation.navigate('Settings')}
-                    >
-                        <Ionicons name="settings-outline" size={24} color={colors.textPrimary} />
+        <LinenBackground>
+            <GlossyNavBar
+                title="Dashboard"
+                rightButton={
+                    <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+                        <Ionicons name="settings-sharp" size={24} color="#fff" style={styles.settingsIcon} />
                     </TouchableOpacity>
+                }
+            />
+
+            <ScrollView
+                style={styles.container}
+                refreshControl={
+                    <RefreshControl refreshing={isLoading} onRefresh={onRefresh} tintColor="#333" />
+                }
+                contentContainerStyle={styles.contentContainer}
+            >
+                {/* Greeting Header */}
+                <View style={styles.header}>
+                    <Text style={styles.greeting}>{getGreeting()},</Text>
+                    <Text style={styles.username}>{user?.name || 'Faculty'}</Text>
                 </View>
 
                 {/* Quick Stats */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Quick Stats</Text>
+                    <Text style={styles.sectionTitle}>OVERVIEW</Text>
                     <View style={styles.statsRow}>
-                        {isLoadingDashboard && !stats ? (
-                            <>
-                                <LoadingSkeleton variant="card" width="30%" height={100} />
-                                <View style={styles.statGap} />
-                                <LoadingSkeleton variant="card" width="30%" height={100} />
-                                <View style={styles.statGap} />
-                                <LoadingSkeleton variant="card" width="30%" height={100} />
-                            </>
-                        ) : (
-                            <>
-                                <StatCard value={stats?.activeSubjects || 0} label="Subjects" />
-                                <View style={styles.statGap} />
-                                <StatCard value={stats?.totalQuestions || 0} label="Questions" />
-                                <View style={styles.statGap} />
-                                <StatCard value={stats?.pendingReview || 0} label="Pending" />
-                            </>
-                        )}
+                        <View style={styles.statWrapper}>
+                            <StatCard
+                                value={stats?.activeSubjects || 0}
+                                label="Subjects"
+                                onPress={() => navigation.navigate('Subjects')}
+                            />
+                        </View>
+                        <View style={styles.statWrapper}>
+                            <StatCard
+                                value={stats?.totalQuestions || 0}
+                                label="Questions"
+                                onPress={() => navigation.navigate('QuestionBank')}
+                            />
+                        </View>
+                        <View style={styles.statWrapper}>
+                            <StatCard
+                                value={stats?.pendingReview || 0}
+                                label="Review"
+                                onPress={() => { }}
+                            />
+                        </View>
                     </View>
                 </View>
 
-                {/* Quick Actions */}
+                {/* Apps Grid */}
                 <View style={styles.section}>
-                    <GroupedList sections={quickActionsSections} />
+                    <Text style={styles.sectionTitle}>QUICK ACTIONS</Text>
+                    <View style={styles.iconGrid}>
+                        <AppIcon
+                            title="Subjects"
+                            color={['#4A90E2', '#0056D2']}
+                            onPress={() => navigation.navigate('Subjects')}
+                        />
+                        <AppIcon
+                            title="New Subject"
+                            color={['#50E3C2', '#2E8B73']}
+                            onPress={() => navigation.navigate('CreateSubject')}
+                        />
+                        <AppIcon
+                            title="Q-Bank"
+                            color={['#F5A623', '#D08906']}
+                            onPress={() => navigation.navigate('QuestionBank')}
+                        />
+                        <AppIcon
+                            title="Rubrics"
+                            color={['#9013FE', '#5B08A5']}
+                            onPress={() => navigation.navigate('Rubrics')}
+                        />
+                    </View>
                 </View>
 
                 {/* Recent Activity */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitleInline}>Recent Activity</Text>
-                    {isLoadingDashboard && !recentActivity ? (
-                        <View style={{ paddingHorizontal: spacing.screenHorizontal }}>
-                            <LoadingSkeleton variant="list" />
-                            <LoadingSkeleton variant="list" />
-                            <LoadingSkeleton variant="list" />
-                        </View>
-                    ) : recentActivity && recentActivity.length > 0 ? (
-                        <View style={styles.activityCard}>
+                    <Text style={styles.sectionTitle}>RECENT ACTIVITY</Text>
+                    {recentActivity && recentActivity.length > 0 ? (
+                        <GlossyCard>
                             {recentActivity.map((activity, index) => (
                                 <View
-                                    key={activity.id}
+                                    key={activity.id || index}
                                     style={[
                                         styles.activityItem,
-                                        index !== recentActivity.length - 1 && styles.activityItemBorder,
+                                        index !== recentActivity.length - 1 && styles.borderBottom
                                     ]}
                                 >
-                                    <View style={styles.activityDot} />
                                     <View style={styles.activityContent}>
-                                        <Text style={styles.activityDescription}>{activity.description}</Text>
-                                        <Text style={styles.activityTime}>
-                                            {activity.subject} • {formatTimestamp(activity.timestamp)}
+                                        <Text style={styles.activityDesc}>{activity.description}</Text>
+                                        <Text style={styles.activityMeta}>
+                                            {activity.subject ? `${activity.subject} • ` : ''}{formatTimestamp(activity.timestamp)}
                                         </Text>
                                     </View>
                                 </View>
                             ))}
-                        </View>
+                        </GlossyCard>
                     ) : (
-                        <Text style={styles.emptyText}>No recent activity</Text>
+                        <View style={styles.emptyState}>
+                            <Text style={styles.emptyText}>No recent activity</Text>
+                        </View>
                     )}
                 </View>
+
+                <View style={styles.bottomSpacer} />
             </ScrollView>
-        </SafeAreaView>
+        </LinenBackground>
     );
 };
 
-const getStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: colors.background,
+    },
+    contentContainer: {
+        paddingBottom: spacing.xl,
     },
     header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: spacing.screenHorizontal,
-        paddingVertical: spacing.md,
+        padding: spacing.lg,
+        paddingBottom: spacing.md,
     },
     greeting: {
-        ...typography.h2,
-        color: colors.textPrimary,
+        fontSize: 18,
+        color: '#4C566C',
+        fontWeight: '500',
+        textShadowColor: 'rgba(255,255,255,0.5)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 0,
     },
-    settingsButton: {
-        padding: spacing.xs,
+    username: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#000',
+        marginTop: 4,
+        textShadowColor: 'rgba(255,255,255,0.5)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 0,
     },
     settingsIcon: {
-        fontSize: 24,
-        color: colors.textPrimary,
+        textShadowColor: 'rgba(0,0,0,0.5)',
+        textShadowOffset: { width: 0, height: -1 },
+        textShadowRadius: 0,
     },
     section: {
-        marginBottom: spacing.lg,
+        marginTop: spacing.lg,
+        paddingHorizontal: spacing.md,
     },
     sectionTitle: {
-        ...typography.h3,
-        color: colors.textPrimary,
-        paddingHorizontal: spacing.screenHorizontal,
-        marginBottom: spacing.md,
-    },
-    sectionTitleInline: {
-        ...typography.h3,
-        color: colors.textPrimary,
-        paddingHorizontal: spacing.screenHorizontal,
-        marginBottom: spacing.sm,
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#4C566C',
+        marginBottom: spacing.xs,
+        marginLeft: spacing.xs,
+        textShadowColor: 'rgba(255,255,255,0.5)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 0,
     },
     statsRow: {
         flexDirection: 'row',
-        paddingHorizontal: spacing.screenHorizontal,
+        justifyContent: 'space-between',
+        marginHorizontal: -spacing.xs,
     },
-    statGap: {
-        width: spacing.sm,
+    statWrapper: {
+        flex: 1,
+        paddingHorizontal: spacing.xs,
     },
-    activityCard: {
-        backgroundColor: colors.surface,
-        marginHorizontal: spacing.screenHorizontal,
-        borderRadius: borderRadius.md,
-        padding: spacing.md,
-        borderWidth: 1,
-        borderColor: colors.border,
+    iconGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'flex-start',
+        marginHorizontal: -10, // Compensate for icon margins
     },
     activityItem: {
-        flexDirection: 'row',
-        paddingVertical: spacing.sm,
+        padding: spacing.md,
+        backgroundColor: 'white',
     },
-    activityItemBorder: {
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: colors.divider,
-    },
-    activityDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: colors.primary,
-        marginTop: 6,
-        marginRight: spacing.sm,
+    borderBottom: {
+        borderBottomWidth: 1,
+        borderBottomColor: '#E5E5EA',
     },
     activityContent: {
         flex: 1,
     },
-    activityDescription: {
-        ...typography.body,
-        color: colors.textPrimary,
-        marginBottom: spacing.xs,
+    activityDesc: {
+        fontSize: 16,
+        color: '#000',
+        marginBottom: 4,
     },
-    activityTime: {
-        ...typography.caption,
-        color: colors.textSecondary,
+    activityMeta: {
+        fontSize: 13,
+        color: '#8E8E93',
+    },
+    emptyState: {
+        padding: spacing.xl,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     emptyText: {
-        ...typography.body,
-        color: colors.textSecondary,
-        textAlign: 'center',
-        marginTop: spacing.sm,
+        color: '#8E8E93',
+        fontSize: 16,
     },
+    bottomSpacer: {
+        height: 40,
+    }
 });
