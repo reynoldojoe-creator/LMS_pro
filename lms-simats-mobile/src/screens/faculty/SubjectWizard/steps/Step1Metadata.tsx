@@ -154,7 +154,7 @@ const getStyles = (colors: any) => StyleSheet.create({
         backgroundColor: colors.surface,
         borderWidth: 1,
         borderColor: colors.itemBorder,
-: 12,
+        borderRadius: 12,
         padding: spacing.md,
         color: colors.textPrimary,
         ...typography.body,
@@ -165,7 +165,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     typeSelector: {
         flexDirection: 'row',
         backgroundColor: colors.surface,
-: 12,
+        borderRadius: 12,
         borderWidth: 1,
         borderColor: colors.itemBorder,
         overflow: 'hidden',

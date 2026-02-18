@@ -110,7 +110,7 @@ export const useRubricStore = create<RubricState>((set, get) => ({
                                 rubrics: state.rubrics.map(r =>
                                     r.id === rubricId
                                         ? { ...r, status: 'generated' as const, generatedAt: new Date().toISOString() }
-                                        : r
+        : r
                                 ),
                                 isLoading: false,
                             }));

@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
     },
     statusBanner: {
         padding: 10,
-: 5,
+        borderRadius: 5,
         alignItems: 'center',
         borderWidth: 1,
         borderColor: 'rgba(0,0,0,0.1)',
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#F0F0F0',
         paddingHorizontal: 8,
         paddingVertical: 3,
-: 10,
+        borderRadius: 10,
         marginRight: 8,
         marginBottom: 4,
         borderWidth: 1,
@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
     optionCircle: {
         width: 24,
         height: 24,
-: 12,
+        borderRadius: 12,
         backgroundColor: '#F0F0F0',
         alignItems: 'center',
         justifyContent: 'center',
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
     },
     modalContainer: {
         backgroundColor: 'white',
-: 16,
+        borderRadius: 16,
         overflow: 'hidden',
     },
     modalHeader: {
@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
     input: {
         borderWidth: 1,
         borderColor: '#DDD',
-: 12,
+        borderRadius: 12,
         padding: spacing.sm,
         height: 100,
         textAlignVertical: 'top',

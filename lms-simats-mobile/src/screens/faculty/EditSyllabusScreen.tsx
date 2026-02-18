@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
     unitSection: {
         marginBottom: spacing.lg,
         backgroundColor: colors.surface,
-: 16,
+        borderRadius: 16,
         padding: spacing.md,
         borderWidth: 1,
         borderColor: colors.border,

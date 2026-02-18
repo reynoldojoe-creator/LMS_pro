@@ -67,7 +67,7 @@ export const GlossyNavBar: React.FC<GlossyNavBarProps> = ({
                         {rightButton && (
                             React.isValidElement(rightButton)
                                 ? rightButton
-                                : <GlossyButton
+        : <GlossyButton
                                     title={(rightButton as any).title}
                                     onPress={(rightButton as any).onPress}
                                     variant={(rightButton as any).variant || 'blue'}

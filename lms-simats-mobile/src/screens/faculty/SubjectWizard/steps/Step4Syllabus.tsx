@@ -222,7 +222,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     uploadArea: {
         height: 150,
         backgroundColor: colors.surface,
-: 16,
+        borderRadius: 16,
         borderWidth: 2,
         borderColor: colors.primary,
         borderStyle: 'dashed',
@@ -250,7 +250,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     summaryBar: {
         flexDirection: 'row',
         backgroundColor: colors.surface,
-: 16,
+        borderRadius: 16,
         padding: spacing.md,
         marginBottom: spacing.lg,
         alignItems: 'center',
@@ -279,7 +279,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     // Unit cards
     unitCard: {
         backgroundColor: colors.surface,
-: 16,
+        borderRadius: 16,
         marginBottom: spacing.md,
         borderWidth: 1,
         borderColor: colors.border,
@@ -295,7 +295,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     unitBadge: {
         width: 36,
         height: 36,
-: 18,
+        borderRadius: 18,
         backgroundColor: colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
@@ -323,7 +323,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     },
     topicCountBadge: {
         backgroundColor: colors.primary + '18',
-: 12,
+        borderRadius: 12,
         paddingHorizontal: 10,
         paddingVertical: 4,
         marginLeft: spacing.sm,
@@ -360,7 +360,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     warningBox: {
         backgroundColor: '#FF9500' + '20',
         padding: spacing.md,
-: 12,
+        borderRadius: 12,
         marginBottom: spacing.md,
         borderWidth: 1,
         borderColor: '#FF9500',

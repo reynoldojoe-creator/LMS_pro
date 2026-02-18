@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         padding: spacing.md,
-: 12,
+        borderRadius: 12,
         borderWidth: 1,
         marginTop: spacing.sm,
     },

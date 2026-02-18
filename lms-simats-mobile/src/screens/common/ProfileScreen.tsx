@@ -175,7 +175,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     avatar: {
         width: 100,
         height: 100,
-: 50,
+        borderRadius: 50,
         backgroundColor: colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
@@ -219,7 +219,7 @@ const getStyles = (colors: any) => StyleSheet.create({
         flex: 1,
         backgroundColor: colors.surface,
         padding: spacing.md,
-: 16,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: colors.border,
         alignItems: 'center',
@@ -237,7 +237,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     infoCard: {
         backgroundColor: colors.surface,
         marginHorizontal: spacing.screenHorizontal,
-: 16,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: colors.border,
         overflow: 'hidden',

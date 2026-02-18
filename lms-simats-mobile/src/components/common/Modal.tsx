@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
         width: 36,
         height: 5,
         backgroundColor: colors.iosGray4,
-: 9999,
+        borderRadius: 9999,
         alignSelf: 'center',
         marginTop: spacing.sm,
     },

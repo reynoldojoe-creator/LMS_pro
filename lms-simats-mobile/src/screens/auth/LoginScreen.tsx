@@ -134,7 +134,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     logoPlaceholder: {
         width: 100,
         height: 100,
-: 20,
+        borderRadius: 20,
         backgroundColor: colors.surface,
         justifyContent: 'center',
         alignItems: 'center',
@@ -174,7 +174,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     formCard: {
         backgroundColor: colors.surface,
         padding: spacing.lg,
-: 16,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: colors.border,
         shadowColor: colors.shadowDark,

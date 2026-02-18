@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     },
     modalContainer: {
         backgroundColor: colors.surface,
-: 16,
+        borderRadius: 16,
         padding: spacing.xl,
     },
     title: {
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     input: {
         borderWidth: 1,
         borderColor: colors.border,
-: 12,
+        borderRadius: 12,
         padding: spacing.md,
         height: 100,
         marginBottom: spacing.lg,

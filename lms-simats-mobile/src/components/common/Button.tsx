@@ -86,7 +86,7 @@ const getStyles = (colors: any) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-: 12, // Increased radius
+        borderRadius: 12, // Increased radius
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: 'transparent',

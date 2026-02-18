@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     stepperButton: {
         width: 44,
         height: 44,
-: 12,
+        borderRadius: 12,
         backgroundColor: colors.surface,
         justifyContent: 'center',
         alignItems: 'center',

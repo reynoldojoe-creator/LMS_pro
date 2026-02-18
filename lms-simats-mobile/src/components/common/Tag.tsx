@@ -83,7 +83,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     tag: {
         paddingHorizontal: spacing.sm,
         paddingVertical: spacing.xs,
-: 9999,
+        borderRadius: 9999,
         alignSelf: 'flex-start',
     },
     tagSm: {

@@ -28,7 +28,7 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.surface,
         padding: spacing.md,  // Reduced from lg to prevent squeeze
-: 16,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: colors.border,
         alignItems: 'center',

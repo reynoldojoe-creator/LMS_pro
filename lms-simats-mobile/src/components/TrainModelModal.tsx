@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     },
     modalContent: {
         backgroundColor: colors.background,
-: 20,
+        borderRadius: 20,
         padding: spacing.xl,
         alignItems: 'center',
         shadowColor: "#000",
@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
     iconContainer: {
         width: 80,
         height: 80,
-: 40,
+        borderRadius: 40,
         backgroundColor: colors.surface,
         justifyContent: 'center',
         alignItems: 'center',
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
         width: '100%',
         backgroundColor: colors.surface || '#F5F5F5',
         padding: spacing.md,
-: 16,
+        borderRadius: 16,
         marginBottom: spacing.lg,
     },
     statRow: {
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 8,
         backgroundColor: colors.border,
-: 4,
+        borderRadius: 4,
         overflow: 'hidden',
     },
     progressBarFill: {
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#FAFAFA',
         borderWidth: 1,
         borderColor: colors.border,
-: 16,
+        borderRadius: 16,
         padding: spacing.md,
         marginBottom: spacing.md,
     },
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
         padding: spacing.sm,
         borderWidth: 1,
         borderColor: colors.border,
-: 12,
+        borderRadius: 12,
         marginBottom: spacing.xs,
         backgroundColor: colors.surface,
     },

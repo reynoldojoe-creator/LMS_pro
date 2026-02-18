@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.surface,
         borderWidth: 1,
         borderColor: colors.border,
-: 12,
+        borderRadius: 12,
         minHeight: 40,
     },
     disabledTrigger: {

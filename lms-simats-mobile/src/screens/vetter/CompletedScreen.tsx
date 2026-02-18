@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     batchCard: {
         backgroundColor: colors.surface,
         padding: spacing.cardPadding,
-: 16,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: colors.border,
         marginBottom: spacing.md,
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     statsRow: {
         flexDirection: 'row',
         backgroundColor: colors.iosGray6,
-: 12,
+        borderRadius: 12,
         padding: spacing.md,
     },
     statItem: {

@@ -520,7 +520,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.surface,
         borderWidth: 1,
         borderColor: colors.border,
-: 12,
+        borderRadius: 12,
         minHeight: 44,
     },
     pickerText: {
@@ -551,7 +551,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.iosGray6,
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.xs,
-: 8,
+        borderRadius: 8,
         width: 60,
         textAlign: 'center',
         borderWidth: 1,
@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
     totalBadge: {
         paddingHorizontal: spacing.sm,
         paddingVertical: 2,
-: 8,
+        borderRadius: 8,
         borderWidth: 1,
     },
     totalBadgeGood: {
@@ -648,7 +648,7 @@ const styles = StyleSheet.create({
     sliderBtn: {
         width: 32,
         height: 32,
-: 8,
+        borderRadius: 8,
         backgroundColor: colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
@@ -663,14 +663,14 @@ const styles = StyleSheet.create({
         flex: 1,
         height: 10,
         backgroundColor: colors.iosGray5,
-: 5,
+        borderRadius: 5,
         marginHorizontal: spacing.sm,
         overflow: 'hidden',
     },
     progressBarInner: {
         height: '100%',
         backgroundColor: colors.primary,
-: 5,
+        borderRadius: 5,
     },
     pickerContainer: {
         width: 100,

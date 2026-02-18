@@ -171,7 +171,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     groupedList: {
         backgroundColor: colors.surface,
         marginHorizontal: spacing.screenHorizontal,
-: 16,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: colors.border,
         overflow: 'hidden',
@@ -201,7 +201,7 @@ const getStyles = (colors: any) => StyleSheet.create({
         backgroundColor: colors.surface,
         marginHorizontal: spacing.screenHorizontal,
         paddingVertical: spacing.md,
-: 16,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: colors.border,
         alignItems: 'center',

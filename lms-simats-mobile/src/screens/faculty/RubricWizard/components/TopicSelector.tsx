@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: spacing.sm,
         paddingVertical: 6,
-: 9999,
+        borderRadius: 9999,
         backgroundColor: colors.surface,
         borderWidth: 1,
         borderColor: colors.divider,

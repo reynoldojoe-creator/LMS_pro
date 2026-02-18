@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     },
     card: {
         backgroundColor: colors.surface,
-: 16,
+        borderRadius: 16,
         marginBottom: spacing.md,
         borderWidth: 1,
         borderColor: colors.border,
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     cardIconContainer: {
         width: 40,
         height: 40,
-: 20,
+        borderRadius: 20,
         backgroundColor: colors.background,
         justifyContent: 'center',
         alignItems: 'center',
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         backgroundColor: 'transparent',
         marginBottom: spacing.md,
-: 12,
+        borderRadius: 12,
     },
     templateButtonText: {
         color: colors.success,
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: colors.border,
         borderStyle: 'dashed',
-: 12,
+        borderRadius: 12,
         padding: spacing.lg,
         alignItems: 'center',
         justifyContent: 'center',
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
     },
     uploadButton: {
         backgroundColor: colors.primary,
-: 12,
+        borderRadius: 12,
         height: 48,
     },
     uploadButtonDisabled: {

@@ -143,7 +143,7 @@ function parseQuestion(raw: any) {
         explanation: explanation || 'Based on the learning objectives for this topic.',
         keyPoints: Array.isArray(keyPoints) && keyPoints.length > 0
             ? keyPoints
-            : ['Review the topic material for detailed understanding'],
+        : ['Review the topic material for detailed understanding'],
         coMapping: coId ? (Array.isArray(coId) ? coId : [coId]) : ['N/A'],
         loMapping: loId ? (Array.isArray(loId) ? loId : [loId]) : ['N/A'],
         bloomLevel: bloomLevel || 'understand',

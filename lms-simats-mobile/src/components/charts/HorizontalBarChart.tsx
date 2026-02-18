@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
     barContainer: {
         height: 24,
         backgroundColor: colors.iosGray5,
-: 8,
+        borderRadius: 8,
         overflow: 'hidden',
         marginBottom: spacing.xs,
     },

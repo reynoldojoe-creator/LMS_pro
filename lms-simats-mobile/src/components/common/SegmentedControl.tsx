@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
         backgroundColor: colors.iosGray6,
-: 12,
+        borderRadius: 12,
         padding: 2,
     },
     segment: {

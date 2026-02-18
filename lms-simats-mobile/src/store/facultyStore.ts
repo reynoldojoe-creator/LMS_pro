@@ -233,7 +233,7 @@ export const useFacultyStore = create<FacultyState>((set, get) => ({
                 // Also update currentSubject if it matches
                 const updatedCurrent = state.currentSubject?.id === subjectId
                     ? updatedSubjects.find(s => s.id === subjectId) || state.currentSubject
-                    : state.currentSubject;
+        : state.currentSubject;
 
                 return { subjects: updatedSubjects, currentSubject: updatedCurrent };
             });

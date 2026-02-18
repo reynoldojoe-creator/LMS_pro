@@ -146,7 +146,7 @@ const getStyles = (colors: any) => StyleSheet.create({
         marginBottom: spacing.md,
         backgroundColor: colors.background, // Slight contrast
         padding: spacing.sm,
-: 8,
+        borderRadius: 8,
     },
     metaItem: {
         marginRight: spacing.lg,
@@ -165,7 +165,7 @@ const getStyles = (colors: any) => StyleSheet.create({
         marginTop: spacing.sm,
         padding: spacing.sm,
         backgroundColor: colors.surface,
-: 8,
+        borderRadius: 8,
         borderWidth: 1,
         borderColor: colors.border,
     },
@@ -181,7 +181,7 @@ const getStyles = (colors: any) => StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         paddingVertical: spacing.sm,
-: 8,
+        borderRadius: 8,
         marginHorizontal: spacing.xs,
     },
     approveButton: {
@@ -202,7 +202,7 @@ const getStyles = (colors: any) => StyleSheet.create({
         marginTop: spacing.sm,
         padding: spacing.sm,
         backgroundColor: colors.error + '10',
-: 8,
+        borderRadius: 8,
     },
     reasonLabel: {
         ...typography.caption,

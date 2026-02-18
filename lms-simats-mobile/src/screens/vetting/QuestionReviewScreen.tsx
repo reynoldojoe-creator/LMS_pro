@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
     reviewBatchBadge: {
         backgroundColor: colors.iosGray6,
         padding: 4,
-: 4,
+        borderRadius: 4,
     },
     headerTitle: {
         ...typography.navTitle,
@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.primary + '20',
         paddingHorizontal: spacing.sm,
         paddingVertical: 2,
-: 4,
+        borderRadius: 4,
         marginRight: spacing.sm,
     },
     badgeText: {
@@ -546,7 +546,7 @@ const styles = StyleSheet.create({
     questionSection: {
         backgroundColor: colors.surface,
         padding: spacing.md,
-: 12,
+        borderRadius: 12,
         marginBottom: spacing.lg,
     },
     questionText: {
@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: spacing.sm,
         backgroundColor: colors.iosGray6,
-: 8,
+        borderRadius: 8,
         marginBottom: spacing.xs,
         borderWidth: 1,
         borderColor: 'transparent',
@@ -575,7 +575,7 @@ const styles = StyleSheet.create({
     optionKey: {
         width: 24,
         height: 24,
-: 12,
+        borderRadius: 12,
         backgroundColor: colors.textSecondary,
         justifyContent: 'center',
         alignItems: 'center',
@@ -595,7 +595,7 @@ const styles = StyleSheet.create({
         marginTop: spacing.sm,
         padding: spacing.sm,
         backgroundColor: colors.iosGray6,
-: 8,
+        borderRadius: 8,
     },
     answerLabel: {
         ...typography.captionBold,
@@ -656,7 +656,7 @@ const styles = StyleSheet.create({
     intensityButtons: {
         flexDirection: 'row',
         backgroundColor: colors.iosGray6,
-: 8,
+        borderRadius: 8,
         padding: 2,
     },
     intensityButton: {
@@ -664,7 +664,7 @@ const styles = StyleSheet.create({
         height: 28,
         justifyContent: 'center',
         alignItems: 'center',
-: 6,
+        borderRadius: 6,
     },
     intensityButtonActive: {
         // Background color set dynamically
@@ -714,7 +714,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: spacing.md,
-: 8,
+        borderRadius: 8,
         borderWidth: 1,
         borderColor: colors.border,
         marginBottom: spacing.sm,
@@ -730,7 +730,7 @@ const styles = StyleSheet.create({
     reasonInput: {
         borderWidth: 1,
         borderColor: colors.border,
-: 8,
+        borderRadius: 8,
         padding: spacing.md,
         height: 100,
         textAlignVertical: 'top',

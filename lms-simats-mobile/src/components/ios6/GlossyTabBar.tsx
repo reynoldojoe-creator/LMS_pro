@@ -26,9 +26,9 @@ export const GlossyTabBar: FC<BottomTabBarProps> = ({ state, descriptors, naviga
                         const label =
                             options.tabBarLabel !== undefined
                                 ? options.tabBarLabel
-                                : options.title !== undefined
+        : options.title !== undefined
                                     ? options.title
-                                    : route.name;
+        : route.name;
 
                         const isFocused = state.index === index;
 

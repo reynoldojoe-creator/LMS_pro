@@ -37,7 +37,7 @@ export const Card: React.FC<CardProps> = ({
 const getStyles = (colors: any) => StyleSheet.create({
     card: {
         backgroundColor: colors.card,
-: 16,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: colors.border,
         shadowColor: '#000',
@@ -47,7 +47,7 @@ const getStyles = (colors: any) => StyleSheet.create({
         elevation: 2,
     },
     grouped: {
-: 20,
+        borderRadius: 20,
         marginHorizontal: spacing.screenHorizontal,
         shadowOpacity: 0.05,
     },
@@ -76,6 +76,6 @@ const getStyles = (colors: any) => StyleSheet.create({
     },
     bodyNoTitle: {
         padding: spacing.cardPadding,
-: 16,
+        borderRadius: 16,
     },
 });

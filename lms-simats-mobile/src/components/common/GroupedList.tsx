@@ -99,7 +99,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     },
     list: {
         backgroundColor: colors.surface,
-: 12,
+        borderRadius: 12,
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: colors.border,

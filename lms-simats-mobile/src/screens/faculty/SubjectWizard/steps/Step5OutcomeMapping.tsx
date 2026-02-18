@@ -196,7 +196,7 @@ const getStyles = (colors: any) => StyleSheet.create({
         backgroundColor: colors.surface,
         borderBottomWidth: 1,
         borderBottomColor: colors.itemBorder,
-: 8,
+        borderRadius: 8,
         marginBottom: 2,
     },
     topicTitle: {
@@ -216,7 +216,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     },
     modalContent: {
         backgroundColor: colors.surface,
-: 16,
+        borderRadius: 16,
         padding: spacing.lg,
         maxHeight: '80%',
         elevation: 5,
@@ -241,7 +241,7 @@ const getStyles = (colors: any) => StyleSheet.create({
         padding: spacing.md,
         borderWidth: 1,
         borderColor: colors.itemBorder,
-: 8,
+        borderRadius: 8,
         marginBottom: spacing.xs,
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -263,7 +263,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     saveButton: {
         backgroundColor: colors.primary,
         padding: spacing.md,
-: 12,
+        borderRadius: 12,
         paddingHorizontal: spacing.xl,
     }
 });

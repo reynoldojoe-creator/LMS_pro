@@ -31,7 +31,7 @@ export const useApiCall = <T, P extends any[] = []>(
         } catch (error: any) {
             const message = error instanceof APIError
                 ? error.message
-                : error.message || 'An unexpected error occurred';
+        : error.message || 'An unexpected error occurred';
 
             setState(prev => ({ ...prev, isLoading: false, error: message }));
             return null;
