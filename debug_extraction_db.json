@@ -1,0 +1,212 @@
+{
+  "subject_name": "Data Structures and Algorithms",
+  "subject_code": "CS301",
+  "terminology_detected": "Course Objectives",
+  "course_outcomes": [
+    {
+      "id": "CO1",
+      "description": "Understand the concepts of data structures and algorithms."
+    },
+    {
+      "id": "CO2",
+      "description": "Analyze the efficiency of algorithms using time and space complexity."
+    },
+    {
+      "id": "CO3",
+      "description": "Apply linear and non-linear data structures to solve problems."
+    },
+    {
+      "id": "CO4",
+      "description": "Evaluate sorting and searching algorithms for various applications."
+    },
+    {
+      "id": "CO5",
+      "description": "Design algorithms using dynamic programming and greedy approaches."
+    }
+  ],
+  "units": [
+    {
+      "unit_number": 1,
+      "unit_title": "Introduction to Linear Data Structures (10 hours)",
+      "topics": [
+        {
+          "name": "Arrays and Linked Lists",
+          "learning_outcomes": [
+            {
+              "id": "LO1.1",
+              "description": "Explain the operations of arrays and linked lists.",
+              "bloom_level": "Understand",
+              "mapped_cos": []
+            },
+            {
+              "id": "LO1.2",
+              "description": "Implement stacks and queues for given applications.",
+              "bloom_level": "Apply",
+              "mapped_cos": []
+            }
+          ]
+        },
+        {
+          "name": "Stacks and Queues (continued)",
+          "learning_outcomes": [
+            {
+              "id": "LO2.1",
+              "description": "Implement stacks and queues using arrays and linked lists.",
+              "bloom_level": "Apply",
+              "mapped_cos": []
+            },
+            {
+              "id": "LO2.2",
+              "description": "Describe the operations of circular queue, priority queue.",
+              "bloom_level": "Understand",
+              "mapped_cos": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit_number": 2,
+      "unit_title": "Trees and Graphs (12 hours)",
+      "topics": [
+        {
+          "name": "Binary Trees",
+          "learning_outcomes": [
+            {
+              "id": "LO3.1",
+              "description": "Construct binary search trees from given data.",
+              "bloom_level": "Create",
+              "mapped_cos": []
+            },
+            {
+              "id": "LO3.2",
+              "description": "Compare BFS and DFS traversal methods.",
+              "bloom_level": "Analyze",
+              "mapped_cos": []
+            }
+          ]
+        },
+        {
+          "name": "Graphs (continued)",
+          "learning_outcomes": [
+            {
+              "id": "LO4.1",
+              "description": "Represent graphs using adjacency matrix and list.",
+              "bloom_level": "Understand",
+              "mapped_cos": []
+            },
+            {
+              "id": "LO4.2",
+              "description": "Apply BFS and DFS traversals to graph problems.",
+              "bloom_level": "Analyze",
+              "mapped_cos": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit_number": 3,
+      "unit_title": "Sorting and Searching (10 hours)",
+      "topics": [
+        {
+          "name": "Sorting Algorithms",
+          "learning_outcomes": [
+            {
+              "id": "LO5.1",
+              "description": "Analyze the time complexity of Quick Sort and Merge Sort.",
+              "bloom_level": "Analyze",
+              "mapped_cos": []
+            },
+            {
+              "id": "LO5.2",
+              "description": "Apply hashing techniques to store and retrieve data efficiently.",
+              "bloom_level": "Apply",
+              "mapped_cos": []
+            }
+          ]
+        },
+        {
+          "name": "Searching Algorithms (continued)",
+          "learning_outcomes": [
+            {
+              "id": "LO6.1",
+              "description": "Implement linear search, binary search algorithms.",
+              "bloom_level": "Understand",
+              "mapped_cos": []
+            },
+            {
+              "id": "LO6.2",
+              "description": "Apply the principles of dynamic programming to solve problems.",
+              "bloom_level": "Evaluate",
+              "mapped_cos": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit_number": 4,
+      "unit_title": "Algorithm Design Techniques (10 hours)",
+      "topics": [
+        {
+          "name": "Dynamic Programming",
+          "learning_outcomes": [
+            {
+              "id": "LO7.1",
+              "description": "Solve the Knapsack problem using Dynamic Programming.",
+              "bloom_level": "Evaluate",
+              "mapped_cos": []
+            },
+            {
+              "id": "LO7.2",
+              "description": "Design efficient algorithms using the Greedy approach.",
+              "bloom_level": "Create",
+              "mapped_cos": []
+            }
+          ]
+        },
+        {
+          "name": "Greedy Algorithms (continued)",
+          "learning_outcomes": [
+            {
+              "id": "LO8.1",
+              "description": "Apply greedy techniques to solve activity selection problems.",
+              "bloom_level": "Evaluate",
+              "mapped_cos": []
+            },
+            {
+              "id": "LO8.2",
+              "description": "Design Huffman coding using the Greedy approach.",
+              "bloom_level": "Create",
+              "mapped_cos": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit_number": 5,
+      "unit_title": "Advanced Data Structures (8 hours)",
+      "topics": [
+        {
+          "name": "Graph Algorithms",
+          "learning_outcomes": [
+            {
+              "id": "LO9.1",
+              "description": "Apply Dijkstra's algorithm to find shortest paths.",
+              "bloom_level": "Apply",
+              "mapped_cos": []
+            },
+            {
+              "id": "LO9.2",
+              "description": "Analyze the complexity of Prim's and Kruskal's algorithms.",
+              "bloom_level": "Analyze",
+              "mapped_cos": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

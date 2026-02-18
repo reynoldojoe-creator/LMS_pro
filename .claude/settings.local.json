@@ -1,0 +1,7 @@
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "http://127.0.0.1:3456/v1",
+    "ANTHROPIC_API_KEY": "AIzaSyD0kE0cYUP8EU5D2ghHPZfWHNgu19AqP0A", 
+    "ANTHROPIC_MODEL": "gemini-2.5-pro"
+  }
+}

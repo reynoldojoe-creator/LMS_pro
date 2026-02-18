@@ -1,0 +1,110 @@
+[
+  {
+    "name": "MCQ Generation (Short Context)",
+    "status": "success",
+    "duration": 47.6557822227478,
+    "questions_generated": 1,
+    "response": {
+      "generated": [
+        {
+          "question_text": "{\n  \"questions\": [\n    {\n      \"question_text\": \"In Quick Sort algorithm, which element is used as a pivot?\n                       A) The first element in the array. B) The last element in the array. C) Any randomly selected element from the array or its subarrays D) There isn't always one specific pivot; it can vary based on implementation.\",\n      \"question_type\": \"MCQ\",\n      \"options\": {\n        \"A\": \"The first element in the array is used as a fixed pivot for Quick Sort.\",\n        \"B\": \"The",
+          "question_type": "mcq",
+          "correct_answer": "Parse error - review manually",
+          "bloom_level": "remember",
+          "difficulty": "easy",
+          "marks": 1,
+          "mapped_co": "N/A",
+          "mapped_lo": "N/A",
+          "id": 20,
+          "validation": {
+            "status": "success",
+            "decision": "approve",
+            "similarity_score": 0.0,
+            "llm_evaluation": {}
+          }
+        }
+      ],
+      "count": 1
+    },
+    "payload": {
+      "subject_id": "1",
+      "question_type": "mcq",
+      "bloom_level": "remember",
+      "difficulty": "easy",
+      "count": 3,
+      "topic_id": null
+    }
+  },
+  {
+    "name": "Short Answer (Reasoning)",
+    "status": "success",
+    "duration": 18.03587508201599,
+    "questions_generated": 1,
+    "response": {
+      "generated": [
+        {
+          "question_text": "{\n  \"questions\": [\n    {\n      \"question_text\": \"Explain the concept of backtracking in Depth First Search (DFS) and how it contributes to solving problems.\",\n      \"question_type\": \"short_answer\",\n      \"expected_answer\": \"Backtracking is a strategy DFS uses where, upon hitting a dead end or already visited node, the algorithm returns ('backtracks') back up one level in search of unexplored paths. This ensures all nodes are explored for potential solutions.\",\n      \"key_points\": [\"DFS\", \"Backtr",
+          "question_type": "short_answer",
+          "correct_answer": "Parse error - review manually",
+          "bloom_level": "analyze",
+          "difficulty": "medium",
+          "marks": 1,
+          "mapped_co": "N/A",
+          "mapped_lo": "N/A",
+          "id": 21,
+          "validation": {
+            "status": "success",
+            "decision": "approve",
+            "similarity_score": 0.0,
+            "llm_evaluation": {}
+          }
+        }
+      ],
+      "count": 1
+    },
+    "payload": {
+      "subject_id": "1",
+      "question_type": "short_answer",
+      "bloom_level": "analyze",
+      "difficulty": "medium",
+      "count": 2,
+      "topic_id": null
+    }
+  },
+  {
+    "name": "Essay (Long Context)",
+    "status": "success",
+    "duration": 61.264519929885864,
+    "questions_generated": 1,
+    "response": {
+      "generated": [
+        {
+          "question_text": "{\n  \"questions\": [\n    {\n      \"question_text\": \"Discuss the role of skimming and scanning as intensive reading strategies in technical writing. Provide examples from relevant texts to illustrate how these techniques can be effectively applied by students learning Technical English (ENG101). Additionally, explain why mastering these skills is crucial for academic success within this subject area.\",\n      \"question_type\": \"essay\",\n      \"expected_answer_outline\": {\n        \"introduction\": \"Introd",
+          "question_type": "essay",
+          "correct_answer": "Parse error - review manually",
+          "bloom_level": "create",
+          "difficulty": "hard",
+          "marks": 1,
+          "mapped_co": "N/A",
+          "mapped_lo": "N/A",
+          "id": 22,
+          "validation": {
+            "status": "success",
+            "decision": "approve",
+            "similarity_score": 0.0,
+            "llm_evaluation": {}
+          }
+        }
+      ],
+      "count": 1
+    },
+    "payload": {
+      "subject_id": "4",
+      "question_type": "essay",
+      "bloom_level": "create",
+      "difficulty": "hard",
+      "count": 1,
+      "topic_id": null
+    }
+  }
+]

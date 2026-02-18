@@ -1,0 +1,119 @@
+{
+  "subject_name": "Data Structures and Algorithms",
+  "subject_code": "CS301",
+  "course_outcomes": [
+    {
+      "id": "CO1",
+      "description": "Understand the concepts of data structures and algorithms."
+    },
+    {
+      "id": "CO2",
+      "description": "Analyze the efficiency of algorithms using time and space complexity."
+    },
+    {
+      "id": "CO3",
+      "description": "Apply linear and non-linear data structures to solve problems."
+    },
+    {
+      "id": "CO4",
+      "description": "Evaluate sorting and searching algorithms for various applications."
+    },
+    {
+      "id": "CO5",
+      "description": "Design algorithms using dynamic programming and greedy approaches."
+    }
+  ],
+  "units": [
+    {
+      "unit_number": 1,
+      "unit_title": "Introduction to Linear Data Structures",
+      "topics": [
+        "Arrays and Linked Lists - Single Linked List",
+        "Double Linked List",
+        "Circular Linked List"
+      ],
+      "learning_outcomes": [
+        {
+          "id": "LO1",
+          "description": "Explain the operations of arrays and linked lists."
+        },
+        {
+          "id": "LO2",
+          "description": "Implement stacks and queues for given applications."
+        }
+      ]
+    },
+    {
+      "unit_number": 2,
+      "unit_title": "Trees and Graphs",
+      "topics": [
+        "Binary Trees - Binary Search Trees (BST) Operations and Traversals",
+        "AVL Trees",
+        "B-Trees"
+      ],
+      "learning_outcomes": [
+        {
+          "id": "LO3",
+          "description": "Construct binary search trees from given data."
+        },
+        {
+          "id": "LO4",
+          "description": "Compare BFS and DFS traversal methods."
+        }
+      ]
+    },
+    {
+      "unit_number": 3,
+      "unit_title": "Sorting and Searching",
+      "topics": [
+        "Bubble Sort - Insertion Sort",
+        "Quick Sort - Merge Sort - Heap Sort"
+      ],
+      "learning_outcomes": [
+        {
+          "id": "LO5",
+          "description": "Analyze the time complexity of Quick Sort and Merge Sort."
+        },
+        {
+          "id": "LO6",
+          "description": "Apply hashing techniques to store and retrieve data efficiently."
+        }
+      ]
+    },
+    {
+      "unit_number": 4,
+      "unit_title": "Algorithm Design Techniques",
+      "topics": [
+        "Dynamic Programming - Principles of Optimality",
+        "Greedy Algorithms: Activity Selection Problem & Huffman Coding"
+      ],
+      "learning_outcomes": [
+        {
+          "id": "LO7",
+          "description": "Solve the Knapsack problem using Dynamic Programming."
+        },
+        {
+          "id": "LO8",
+          "description": "Design efficient algorithms using Greedy approach."
+        }
+      ]
+    },
+    {
+      "unit_number": 5,
+      "unit_title": "Advanced Data Structures",
+      "topics": [
+        "Shortest Path Algorithms - Dijkstra's & Bellman-Ford Algorithm; Minimum Spanning Trees - Prim's and Kruskal\u2019s algorithms"
+      ],
+      "learning_outcomes": [
+        {
+          "id": "LO9",
+          "description": "Apply Dijkstra's algorithm to find shortest paths."
+        },
+        {
+          "id": "LO10",
+          "description": "Analyze the complexity of Prim's and Kruskal\u2019s algorithms."
+        }
+      ]
+    }
+  ]
+}

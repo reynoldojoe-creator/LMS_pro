@@ -1,0 +1,22 @@
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# OS specific
+.DS_Store
+.idea/
+.vscode/
+
+# Large folders/files
+backend/data/
+backend/ml_models/
+*.safetensors
+*.sqlite3
