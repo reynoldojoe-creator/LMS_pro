@@ -4,7 +4,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFacultyStore } from '../../store/facultyStore';
 import { LinenBackground, GlossyNavBar, GlossyCard, GlossyButton, GroupedTableView } from '../../components/ios6';
 import { colors } from '../../theme/colors';
-import { spacing, typography} from '../../theme';
+import { spacing, typography } from '../../theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Tag } from '../../components/common'; // Keep Tag for now or refactor to gloss
 
@@ -348,12 +348,12 @@ const styles = StyleSheet.create({
     mappedInfo: { marginBottom: 10 },
     label: { fontSize: 12, fontWeight: 'bold', color: '#666', marginBottom: 5 },
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
-    chip: { backgroundColor: '#E0E0E0', paddingHorizontal: 6, paddingVertical: 2,: 4 },
+    chip: { backgroundColor: '#E0E0E0', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
     chipText: { fontSize: 11, color: '#333' },
     moreText: { fontSize: 11, color: '#888', alignSelf: 'center' },
     actions: { flexDirection: 'row', marginTop: 5 },
     addTopicRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    input: { flex: 1, borderWidth: 1, borderColor: '#CCC',: 5, padding: 8, backgroundColor: 'white', height: 40 },
+    input: { flex: 1, borderWidth: 1, borderColor: '#CCC', borderRadius: 5, padding: 8, backgroundColor: 'white', height: 40 },
     emptyState: { padding: 20, alignItems: 'center' },
     emptyText: { color: '#888', fontStyle: 'italic' },
     // Modal
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
     modalContainer: { height: '80%', backgroundColor: '#E0E0E0', borderTopLeftRadius: 10, borderTopRightRadius: 10, overflow: 'hidden' },
     modalBody: { flex: 1, padding: 15 },
     modalSubtitle: { fontSize: 14, color: '#555', marginBottom: 10, fontStyle: 'italic' },
-    topicList: { flex: 1, backgroundColor: 'white',: 5, borderWidth: 1, borderColor: '#CCC', marginBottom: 10 },
+    topicList: { flex: 1, backgroundColor: 'white', borderRadius: 5, borderWidth: 1, borderColor: '#CCC', marginBottom: 10 },
     topicRow: { flexDirection: 'row', justifyContent: 'space-between', padding: 12, borderBottomWidth: 1, borderBottomColor: '#EEE', alignItems: 'center' },
     topicRowSelected: { backgroundColor: '#F0F8FF' },
     topicRowText: { fontSize: 14, color: '#333' }

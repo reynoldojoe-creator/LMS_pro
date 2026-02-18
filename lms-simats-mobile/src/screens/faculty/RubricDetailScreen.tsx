@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { colors, typography, spacing} from '../../theme';
+import { colors, typography, spacing } from '../../theme';
 import { useRubricStore, useFacultyStore } from '../../store';
 import { LinenBackground, GlossyNavBar, GlossyCard, GlossyButton } from '../../components/ios6';
 import { Ionicons } from '@expo/vector-icons';
@@ -31,8 +31,8 @@ export const RubricDetailScreen = ({ route, navigation }: Props) => {
     const s = rubric.sections;
     const totalQuestions = !s ? 0
         : Array.isArray(s) ? s.reduce((sum, item) => sum + (item.count || 0), 0)
-        : typeof s === 'object' ? Object.values(s).reduce((sum: number, item: any) => sum + (item?.count || 0), 0)
-        borderRadius: 0;
+            : typeof s === 'object' ? Object.values(s).reduce((sum: number, item: any) => sum + (item?.count || 0), 0)
+                : 0;
 
     const handleEdit = () => {
         // TODO: Navigate to edit screen
@@ -64,9 +64,9 @@ export const RubricDetailScreen = ({ route, navigation }: Props) => {
     const sec = rubric.sections;
     const sectionsArr = !sec ? []
         : Array.isArray(sec) ? sec
-        : typeof sec === 'object'
+            : typeof sec === 'object'
                 ? Object.entries(sec).map(([type, val]: [string, any]) => ({ type, ...val, id: type }))
-        : [];
+                : [];
 
     return (
         <LinenBackground>

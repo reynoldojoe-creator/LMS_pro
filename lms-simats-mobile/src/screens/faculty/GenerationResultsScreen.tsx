@@ -2,7 +2,7 @@ import React, { useEffect, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { colors, typography, spacing} from '../../theme';
+import { colors, typography, spacing } from '../../theme';
 import { Tag } from '../../components/common';
 import { useRubricStore } from '../../store';
 import { LinenBackground, GlossyNavBar, GlossyCard, GlossyButton } from '../../components/ios6';
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
     content: { paddingBottom: spacing.xl },
     loadingText: { marginTop: 10, color: '#666' },
     summaryText: { fontSize: 16, fontWeight: 'bold', color: '#333', textAlign: 'center', marginBottom: 10 },
-    summaryProgress: { height: 10, backgroundColor: '#DDD',: 5, overflow: 'hidden', borderWidth: 1, borderColor: '#CCC' },
+    summaryProgress: { height: 10, backgroundColor: '#DDD', borderRadius: 5, overflow: 'hidden', borderWidth: 1, borderColor: '#CCC' },
     summaryProgressBar: { flex: 1 },
     summaryProgressFill: { height: '100%', backgroundColor: colors.success }, // Could be a gradient image or linear gradient if possible
     questionHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 },
@@ -148,6 +148,6 @@ const styles = StyleSheet.create({
     statusIcon: { fontWeight: 'bold', fontSize: 12 },
     questionText: { fontSize: 14, color: '#333', marginBottom: 10, lineHeight: 20 },
     questionMeta: { flexDirection: 'row', gap: 5 },
-    metaTag: { backgroundColor: '#EEE', paddingHorizontal: 6, paddingVertical: 2,: 4 },
+    metaTag: { backgroundColor: '#EEE', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
     metaText: { fontSize: 10, color: '#555', fontWeight: 'bold' },
 });
