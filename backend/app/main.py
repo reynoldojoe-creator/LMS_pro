@@ -370,32 +370,6 @@ async def list_questions(
         
     return results
 
-@app.post("/vetting/{question_id}/{action}")
-async def vet_question(
-    question_id: int, 
-    action: str, 
-    request: schemas.VettingActionRequest,
-    db: Session = Depends(get_db)
-):
-    q = db.query(database.Question).filter(database.Question.id == question_id).first()
-    if not q:
-        raise HTTPException(status_code=404, detail="Question not found")
-        
-    if action == "approve":
-        q.status = "approved"
-    elif action == "reject":
-        q.status = "rejected"
-        q.rejection_reason = request.reason
-    elif action == "quarantine":
-        q.status = "quarantined"
-        q.rejection_reason = request.notes
-    else:
-        raise HTTPException(status_code=400, detail="Invalid action")
-        
-    db.commit()
-    return {"message": f"Question {question_id} {action}d successfully"}
-
-
 
 # --- Vetting ---
 # Endpoints handled by app.include_router(vetting.router)

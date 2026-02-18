@@ -210,6 +210,8 @@ class Question(Base):
     # Validation & Vetting
     status = Column(String, default="pending") # pending, approved, rejected, quarantined
     rejection_reason = Column(Text, nullable=True)
+    rag_context = Column(Text, nullable=True)  # JSON string of retrieved chunks
+    approval_feedback = Column(Text, nullable=True)  # JSON: positive notes
     validation_score = Column(Integer, nullable=True)
     
     # Vetting Context

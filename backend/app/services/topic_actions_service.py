@@ -125,7 +125,8 @@ class TopicActionsService:
                 rubric_id=None,
                 status="approved", # No vetting needed
                 co_id=q.get("mapped_co") or q.get("co_mapping"),
-                lo_id=q.get("mapped_lo") or q.get("lo_mapping")
+                lo_id=q.get("mapped_lo") or q.get("lo_mapping"),
+                rag_context=json.dumps([context]) if context else "[]"
             )
             
             # Handle list formats for CO/LO

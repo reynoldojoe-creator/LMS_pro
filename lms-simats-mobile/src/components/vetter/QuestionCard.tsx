@@ -67,16 +67,40 @@ export const QuestionCard = ({
             {question.options && (
                 <View style={styles.optionsContainer}>
                     {/* Render options if MCQ */}
-                    {Object.entries(question.options).map(([key, value]) => {
-                        // Clean up prefixes like "A) ", "A. "
-                        const cleanText = (value as string).replace(new RegExp(`^${key}[).]\\s*`, 'i'), '');
-                        return (
-                            <View key={key} style={{ flexDirection: 'row', marginBottom: 4 }}>
-                                <Text style={{ fontWeight: 'bold', marginRight: 8 }}>{key}.</Text>
-                                <Text style={{ flex: 1, color: colors.textPrimary }}>{cleanText}</Text>
-                            </View>
-                        );
-                    })}
+                    {(() => {
+                        let optionsToRender = question.options;
+
+                        // Safety parsing if still a string
+                        if (typeof optionsToRender === 'string') {
+                            try {
+                                optionsToRender = JSON.parse(optionsToRender);
+                            } catch {
+                                return <Text style={{ color: colors.error }}>Invalid options format</Text>;
+                            }
+                        }
+
+                        if (Array.isArray(optionsToRender)) {
+                            return optionsToRender.map((opt, idx) => (
+                                <View key={idx} style={{ flexDirection: 'row', marginBottom: 4 }}>
+                                    <Text style={{ fontWeight: 'bold', marginRight: 8 }}>{String.fromCharCode(65 + idx)}.</Text>
+                                    <Text style={{ flex: 1, color: colors.textPrimary }}>{opt}</Text>
+                                </View>
+                            ));
+                        } else if (typeof optionsToRender === 'object' && optionsToRender !== null) {
+                            return Object.entries(optionsToRender).map(([key, value]) => {
+                                // Clean up prefixes like "A) ", "A. "
+                                const valStr = String(value);
+                                const cleanText = valStr.replace(new RegExp(`^${key}[).]\\s*`, 'i'), '');
+                                return (
+                                    <View key={key} style={{ flexDirection: 'row', marginBottom: 4 }}>
+                                        <Text style={{ fontWeight: 'bold', marginRight: 8 }}>{key}.</Text>
+                                        <Text style={{ flex: 1, color: colors.textPrimary }}>{cleanText}</Text>
+                                    </View>
+                                );
+                            });
+                        }
+                        return <Text>No options available</Text>;
+                    })()}
                 </View>
             )}
 

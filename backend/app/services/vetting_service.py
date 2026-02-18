@@ -2,8 +2,9 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session, joinedload
 from datetime import datetime
 from ..models import vetting_models
-from ..models.database import Subject, GeneratedBatch, Question, Rubric
+from ..models.database import Subject, GeneratedBatch, Question, Rubric, Topic
 from sqlalchemy import func
+import json
 
 class VettingService:
     
@@ -160,7 +161,7 @@ class VettingService:
     
     async def get_batch_detail(self, db: Session, batch_id: str) -> Dict[str, Any]:
         """
-        Get batch with questions grouped by type:
+        Get batch with questions grouped by type, including RAG context and Topic COs/LOs
         """
         from ..models import database  # Import here to ensure it's available for fallback logic
 
@@ -194,6 +195,11 @@ class VettingService:
             )
         ).all()
         
+        # Helper to get topic COs/LOs
+        topics = db.query(database.Topic).filter(database.Topic.subject_id == batch.subject_id).all()
+        topic_map = {t.id: t for t in topics}
+
+        formatted_questions = []
         sections = {
             "mcq": [],
             "short_answer": [],
@@ -201,23 +207,63 @@ class VettingService:
         }
         
         for q in questions:
+            # Parse RAG context
+            rag_context = []
+            if q.rag_context:
+                try:
+                    rag_context = json.loads(q.rag_context)
+                except:
+                    pass
+            
+            # Get Topic COs/LOs
+            topic_cos = []
+            topic_los = []
+            if q.topic_id and q.topic_id in topic_map:
+                t = topic_map[q.topic_id]
+                topic_cos = [co.code for co in t.mapped_cos]
+                topic_los = [lo.code for lo in t.mapped_los]
+             
+            q_dict = {
+                "id": q.id,
+                "question_text": q.question_text,
+                "question_type": q.question_type,
+                "options": q.options,
+                "correct_answer": q.correct_answer,
+                "difficulty": q.difficulty,
+                "marks": q.marks,
+                "status": q.status,
+                "co_id": q.co_id,
+                "lo_id": q.lo_id,
+                "ragContext": rag_context,
+                "rag_context": rag_context, # Dual support
+                "topicCOs": topic_cos,
+                "topicLOs": topic_los,
+                "rubric_id": q.rubric_id,
+                "batch_id": q.batch_id,
+                "subject_id": q.subject_id,
+                "topic_id": q.topic_id,
+                "bloom_level": getattr(q, 'bloom_level', None)
+            }
+            
+            formatted_questions.append(q_dict)
+
             q_type = q.question_type.lower()
             if "mcq" in q_type:
-                sections["mcq"].append(q)
+                sections["mcq"].append(q_dict)
             elif "short" in q_type:
-                sections["short_answer"].append(q)
+                sections["short_answer"].append(q_dict)
             elif "essay" in q_type:
-                sections["essay"].append(q)
+                sections["essay"].append(q_dict)
             elif "long" in q_type:
-                sections["essay"].append(q) # Map long answer to essay
+                sections["essay"].append(q_dict) # Map long answer to essay
             else:
                 # Fallback
-                sections.setdefault(q_type, []).append(q)
+                sections.setdefault(q_type, []).append(q_dict)
                 
         return {
             "batch": batch,
             "sections": sections,
-            "questions": questions,  # Add flat list for frontend
+            "questions": formatted_questions,  
             "progress": {
                 "total": batch.total_questions if batch else len(questions),
                 "approved": batch.approved_count if batch else sum(1 for q in questions if q.status == 'approved'),
@@ -232,7 +278,8 @@ class VettingService:
         question_id: str, # Question ID is int in DB but str in signature? Let's check.
         vetter_id: str,
         co_adjustment: Optional[List[Dict]] = None,
-        lo_adjustment: Optional[List[Dict]] = None
+        lo_adjustment: Optional[List[Dict]] = None,
+        notes: Optional[str] = None
     ) -> Any:
         from ..models import database
         
@@ -251,19 +298,16 @@ class VettingService:
             
         old_status = question.status
         question.status = "approved"
-        # question.vetted_by = vetter_id # Question model doesn't have vetted_by yet? checks schema...
-        # The user didn't ask to add vetted_by to Question. 
-        # But GeneratedQuestion had it.
-        # If we unify, we lose vetted_by unless we add it to Question.
-        # For now, let's skip vetted_by or adding it if strictly required. 
-        # User only asked for is_reference and rubric_id.
-        # But vetting process might need it.
-        # I'll update status and batch counts.
         
-        # If co_adjustment is provided, we might need a place to store it.
-        # Question has co_id (string). GeneratedQuestion had JSON mappings.
-        # This is the friction of unification.
-        # I will assume for Prototype we just Approve/Reject status.
+        # Save feedback
+        feedback_data = {
+            "vetter_id": vetter_id,
+            "notes": notes,
+            "co_adjustment": co_adjustment,
+            "lo_adjustment": lo_adjustment,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        question.approval_feedback = json.dumps(feedback_data)
         
         # Update batch counts
         if question.batch_id:

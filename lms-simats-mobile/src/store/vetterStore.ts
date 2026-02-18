@@ -126,6 +126,29 @@ export const useVetterStore = create<VetterState>((set, get) => ({
                     const cleanStatus = q.status || 'pending';
 
                     try {
+                        // 1. Double-parse JSON string if needed (some backends double-stringify)
+                        if (typeof cleanOptions === 'string') {
+                            try {
+                                cleanOptions = JSON.parse(cleanOptions);
+                            } catch {
+                                cleanOptions = null;
+                            }
+                        }
+                        if (typeof cleanOptions === 'string') {
+                            try {
+                                cleanOptions = JSON.parse(cleanOptions);
+                            } catch {
+                                cleanOptions = null;
+                            }
+                        }
+
+                        // 2. Convert dict format {"A": "text"} to array format ["text1", "text2"] if desired
+                        // BUT: Backend seems to return dict for keys, so let's keep it as object if possible
+                        // The user said: "the backend stores options as a JSON string... which may return a dict"
+                        // The QuestionCard uses Object.entries(question.options).map... so Dict is FINE.
+                        // The PROBLEM was it was a STRING "{\"A\":...}" which Object.entries treats as string chars.
+
+                        // 3. Handle complex question text with options embedded
                         if (cleanText && typeof cleanText === 'string' && cleanText.trim().startsWith('{')) {
                             const parsed = JSON.parse(cleanText);
                             if (parsed.questions && parsed.questions[0]) {
@@ -144,6 +167,20 @@ export const useVetterStore = create<VetterState>((set, get) => ({
                         // ignore
                     }
 
+                    // Normalize RAG Context
+                    let cleanRagContext: string[] = [];
+                    const rawRag = (q as any).ragContext || (q as any).rag_context;
+                    if (Array.isArray(rawRag)) {
+                        cleanRagContext = rawRag;
+                    } else if (typeof rawRag === 'string') {
+                        try {
+                            const parsed = JSON.parse(rawRag);
+                            cleanRagContext = Array.isArray(parsed) ? parsed : (parsed ? [JSON.stringify(parsed)] : []);
+                        } catch {
+                            if (rawRag.trim()) cleanRagContext = [rawRag];
+                        }
+                    }
+
                     return {
                         id: q.id?.toString(),
                         subjectId: q.subject_id || q.subjectId,
@@ -160,7 +197,11 @@ export const useVetterStore = create<VetterState>((set, get) => ({
                         keyPoints: cleanKeyPoints,
                         status: cleanStatus,
                         createdAt: q.created_at || q.createdAt,
-                        validationScore: cleanScore
+                        validationScore: cleanScore,
+                        ragContext: cleanRagContext,
+                        topicCOs: (q as any).topicCOs || [],
+                        topicLOs: (q as any).topicLOs || [],
+                        approvalFeedback: (q as any).approvalFeedback
                     } as Question;
                 });
             }

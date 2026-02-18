@@ -1,47 +1,101 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { useVetterStore } from '../../store';
-import { Button, Tag, Modal } from '../../components/common';
+import { Button, Tag, LoadingSpinner } from '../../components/common';
 import { RejectReasonModal } from './RejectReasonModal';
 import { QuarantineModal } from './QuarantineModal';
+import { ApprovalFeedbackModal } from './ApprovalFeedbackModal';
+
+if (Platform.OS === 'android') {
+    if (UIManager.setLayoutAnimationEnabledExperimental) {
+        UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+}
 
 type Props = NativeStackScreenProps<any, 'QuestionReview'>;
 
 export const QuestionReviewScreen = ({ route, navigation }: Props) => {
-    const { batchId, questionId } = route.params as { batchId: string; questionId: string };
-    const { currentBatch, approveQuestion, rejectQuestion, quarantineQuestion } = useVetterStore();
+    const { batchId, questionId: initialQuestionId } = route.params as { batchId: string; questionId?: string };
+    const { currentBatch, startReview, approveQuestion, rejectQuestion, quarantineQuestion, isLoading } = useVetterStore();
+
+    // Local state for index navigation
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [isExpandedRAG, setIsExpandedRAG] = useState(false);
+
+    // Modals
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [showQuarantineModal, setShowQuarantineModal] = useState(false);
+    const [showApproveModal, setShowApproveModal] = useState(false);
 
-    const question = currentBatch?.questions.find(q => q.id === questionId);
-    const questionIndex = currentBatch?.questions.findIndex(q => q.id === questionId) || 0;
+    useEffect(() => {
+        if (!currentBatch || currentBatch.id !== batchId) {
+            startReview(batchId);
+        }
+    }, [batchId]);
 
-    if (!question || !currentBatch) {
+    useEffect(() => {
+        if (currentBatch && initialQuestionId) {
+            const idx = currentBatch.questions.findIndex(q => q.id === initialQuestionId);
+            if (idx >= 0) setCurrentIndex(idx);
+        }
+    }, [currentBatch, initialQuestionId]);
+
+    if (isLoading || !currentBatch) {
+        return <LoadingSpinner fullScreen />;
+    }
+
+    const question = currentBatch.questions[currentIndex];
+    const isFirst = currentIndex === 0;
+    const isLast = currentIndex === currentBatch.questions.length - 1;
+
+    if (!question) {
         return (
             <SafeAreaView style={styles.container}>
-                <Text>Question not found</Text>
+                <Text>No questions found in this batch.</Text>
             </SafeAreaView>
         );
     }
 
-    const handleApprove = async () => {
-        await approveQuestion(questionId);
-        navigation.goBack();
+    const handleNext = () => {
+        if (!isLast) setCurrentIndex(prev => prev + 1);
+    };
+
+    const handlePrev = () => {
+        if (!isFirst) setCurrentIndex(prev => prev - 1);
+    };
+
+    const toggleRAG = () => {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setIsExpandedRAG(!isExpandedRAG);
+    };
+
+    const handleApprove = async (feedback?: any) => {
+        // Feedback is optional notes/adjustments
+        await approveQuestion(question.id, feedback?.coAdjustments, feedback?.loAdjustments);
+        // Note: passing 'notes' to approveQuestion depends on store update. 
+        // For now, let's assume store handles it or we update store later to accept notes.
+        // We updated backend to accept notes, but store function signature might need update or we pass in adjustments object.
+
+        setShowApproveModal(false);
+        if (!isLast) handleNext();
+        else navigation.goBack();
     };
 
     const handleReject = async (reason: string) => {
-        await rejectQuestion(questionId, reason);
+        await rejectQuestion(question.id, reason);
         setShowRejectModal(false);
-        navigation.goBack();
+        if (!isLast) handleNext();
+        else navigation.goBack();
     };
 
     const handleQuarantine = async (notes: string) => {
-        await quarantineQuestion(questionId, notes);
+        await quarantineQuestion(question.id, notes);
         setShowQuarantineModal(false);
-        navigation.goBack();
+        if (!isLast) handleNext();
+        else navigation.goBack();
     };
 
     return (
@@ -49,94 +103,109 @@ export const QuestionReviewScreen = ({ route, navigation }: Props) => {
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <Text style={styles.backChevron}>‹</Text>
-                    <Text style={styles.backText}>Back</Text>
+                    <Text style={styles.backText}>Queue</Text>
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>
-                    Question {questionIndex + 1} of {currentBatch.totalQuestions}
+                    {currentIndex + 1} / {currentBatch.totalQuestions}
                 </Text>
-                <View style={styles.headerRight} />
+                <View style={styles.navButtons}>
+                    <TouchableOpacity onPress={handlePrev} disabled={isFirst} style={[styles.navBtn, isFirst && styles.disabledNav]}>
+                        <Text style={styles.navBtnText}>←</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleNext} disabled={isLast} style={[styles.navBtn, isLast && styles.disabledNav]}>
+                        <Text style={styles.navBtnText}>→</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <ScrollView style={styles.content}>
-                {/* Question Type Tags */}
+                {/* Clean Status & Type Only */}
                 <View style={styles.tagsRow}>
-                    <Tag label={question.type.toUpperCase()} color={colors.iosBlue} />
-                    <Tag
-                        label={question.bloomLevel.charAt(0).toUpperCase() + question.bloomLevel.slice(1)}
-                        color={colors.iosPurple}
-                    />
-                    <Tag
-                        label={question.difficulty.charAt(0).toUpperCase() + question.difficulty.slice(1)}
-                        color={colors.iosOrange}
-                    />
+                    <Tag label={question.type.toUpperCase()} color={colors.primary} />
+                    {question.status !== 'pending' && (
+                        <Tag
+                            label={question.status.toUpperCase()}
+                            color={question.status === 'approved' ? colors.success : question.status === 'rejected' ? colors.error : colors.warning}
+                        />
+                    )}
                 </View>
 
-                {/* CO Mapping */}
-                <View style={styles.coCard}>
-                    <Text style={styles.coTitle}>CO Mapping</Text>
-                    <Text style={styles.coDescription}>CO2: Implement linear data structures</Text>
-                    <View style={styles.intensityRow}>
-                        <Text style={styles.intensityLabel}>Intensity:</Text>
-                        <View style={styles.intensityDots}>
-                            {[1, 2, 3, 4, 5].map((i) => (
-                                <View
-                                    key={i}
-                                    style={[
-                                        styles.intensityDot,
-                                        i <= 3 ? styles.intensityDotFilled : styles.intensityDotEmpty,
-                                    ]}
-                                />
-                            ))}
-                        </View>
-                        <Text style={styles.intensityValue}>High</Text>
-                    </View>
-                </View>
+                {/* RAG Context Section */}
+                <TouchableOpacity onPress={toggleRAG} style={styles.ragHeader} activeOpacity={0.8}>
+                    <Text style={styles.ragTitle}>Source Context (RAG)</Text>
+                    <Text style={styles.ragChevron}>{isExpandedRAG ? '▼' : '▶'}</Text>
+                </TouchableOpacity>
 
-                {/* Question */}
-                <View style={styles.questionSection}>
-                    <Text style={styles.sectionLabel}>Question:</Text>
-                    <Text style={styles.questionText}>{question.questionText}</Text>
-                </View>
-
-                {/* Options (for MCQ) */}
-                {question.type === 'mcq' && question.options && (
-                    <View style={styles.optionsSection}>
-                        {question.options.map((option, index) => (
-                            <View
-                                key={index}
-                                style={[
-                                    styles.optionCard,
-                                    option === question.correctAnswer && styles.correctOption,
-                                ]}
-                            >
-                                <Text style={styles.optionLabel}>{String.fromCharCode(65 + index)})</Text>
-                                <Text style={styles.optionText}>{option}</Text>
-                                {option === question.correctAnswer && (
-                                    <Text style={styles.correctMark}>← Correct</Text>
-                                )}
-                            </View>
-                        ))}
+                {isExpandedRAG && (
+                    <View style={styles.ragContent}>
+                        {question.ragContext && question.ragContext.length > 0 ? (
+                            question.ragContext.map((chunk, i) => (
+                                <View key={i} style={styles.ragChunk}>
+                                    <Text style={styles.ragText}>{chunk}</Text>
+                                </View>
+                            ))
+                        ) : (
+                            <Text style={styles.ragEmpty}>No RAG context available</Text>
+                        )}
                     </View>
                 )}
 
-                {/* Explanation */}
-                <View style={styles.explanationSection}>
-                    <Text style={styles.sectionLabel}>Explanation:</Text>
-                    <Text style={styles.explanationText}>
-                        In a balanced BST, the height is log(n), so search takes O(log n) time complexity.
-                    </Text>
+                {/* Question */}
+                <View style={styles.questionSection}>
+                    <Text style={styles.questionText}>{question.questionText}</Text>
                 </View>
 
-                {/* Validation Score */}
-                <View style={styles.validationCard}>
-                    <Text style={styles.validationScore}>Validation Score: 78/100</Text>
-                    <View style={styles.warningBox}>
-                        <Text style={styles.warningIcon}>⚠️</Text>
-                        <Text style={styles.warningText}>
-                            Bloom's level might be "Remember" not "Understand"
-                        </Text>
+                {/* Options (MCQ) */}
+                {question.type === 'mcq' && question.options && (
+                    <View style={styles.optionsSection}>
+                        {(Array.isArray(question.options) ? question.options : Object.values(question.options)).map((option: string, index: number) => {
+                            const cleanOption = option.replace(/^[A-Z][\.\)]\s*/, '');
+                            return (
+                                <View
+                                    key={index}
+                                    style={[
+                                        styles.optionCard,
+                                        option === question.correctAnswer && styles.correctOption,
+                                    ]}
+                                >
+                                    <Text style={styles.optionLabel}>{String.fromCharCode(65 + index)}</Text>
+                                    <Text style={styles.optionText}>{cleanOption}</Text>
+                                    {option === question.correctAnswer && (
+                                        <Text style={styles.correctMark}>✓</Text>
+                                    )}
+                                </View>
+                            );
+                        })}
+                    </View>
+                )}
+
+                {/* Topic Metadata (COs/LOs) */}
+                <View style={styles.metaCard}>
+                    <Text style={styles.metaTitle}>Topic Outcomes</Text>
+
+                    <View style={styles.metaRow}>
+                        <Text style={styles.metaLabel}>COs:</Text>
+                        {question.topicCOs && question.topicCOs.length > 0 ? (
+                            <View style={styles.chips}>
+                                {question.topicCOs.map(co => (
+                                    <Text key={co} style={styles.chip}>{co}</Text>
+                                ))}
+                            </View>
+                        ) : <Text style={styles.metaValue}>None</Text>}
+                    </View>
+
+                    <View style={styles.metaRow}>
+                        <Text style={styles.metaLabel}>LOs:</Text>
+                        {question.topicLOs && question.topicLOs.length > 0 ? (
+                            <View style={styles.chips}>
+                                {question.topicLOs.map(lo => (
+                                    <Text key={lo} style={styles.chip}>{lo}</Text>
+                                ))}
+                            </View>
+                        ) : <Text style={styles.metaValue}>None</Text>}
                     </View>
                 </View>
+
             </ScrollView>
 
             {/* Action Buttons */}
@@ -154,15 +223,16 @@ export const QuestionReviewScreen = ({ route, navigation }: Props) => {
                     onPress={() => setShowQuarantineModal(true)}
                 >
                     <Text style={styles.actionIcon}>⚠️</Text>
-                    <Text style={styles.actionLabel}>Quarantine</Text>
+                    <Text style={styles.actionLabel}>Flag</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     style={[styles.actionButton, styles.approveButton]}
-                    onPress={handleApprove}
+                    onPress={() => setShowApproveModal(true)}
+                // onPress={() => handleApprove()} // Direct approve if no feedback needed
                 >
                     <Text style={styles.actionIcon}>✓</Text>
-                    <Text style={styles.actionLabel}>Approve</Text>
+                    <Text style={{ ...styles.actionLabel, color: 'white' }}>Approve</Text>
                 </TouchableOpacity>
             </View>
 
@@ -178,6 +248,12 @@ export const QuestionReviewScreen = ({ route, navigation }: Props) => {
                 onClose={() => setShowQuarantineModal(false)}
                 onConfirm={handleQuarantine}
             />
+
+            <ApprovalFeedbackModal
+                visible={showApproveModal}
+                onClose={() => setShowApproveModal(false)}
+                onConfirm={handleApprove}
+            />
         </SafeAreaView>
     );
 };
@@ -192,34 +268,45 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: spacing.screenHorizontal,
-        paddingVertical: spacing.md,
-        borderBottomWidth: StyleSheet.hairlineWidth,
+        paddingVertical: spacing.sm,
+        borderBottomWidth: 1,
         borderBottomColor: colors.divider,
         backgroundColor: colors.surface,
     },
     backButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        flex: 1,
+        width: 80,
     },
     backChevron: {
-        fontSize: 32,
+        fontSize: 28,
         color: colors.primary,
-        fontWeight: '300',
-        marginRight: -4,
+        marginRight: 4,
     },
     backText: {
         ...typography.body,
         color: colors.primary,
     },
     headerTitle: {
-        ...typography.navTitle,
+        ...typography.h3,
         color: colors.textPrimary,
-        flex: 2,
-        textAlign: 'center',
     },
-    headerRight: {
-        flex: 1,
+    navButtons: {
+        flexDirection: 'row',
+        width: 80,
+        justifyContent: 'flex-end',
+        gap: 8,
+    },
+    navBtn: {
+        padding: 8,
+    },
+    disabledNav: {
+        opacity: 0.3,
+    },
+    navBtnText: {
+        fontSize: 20,
+        color: colors.primary,
+        fontWeight: 'bold',
     },
     content: {
         flex: 1,
@@ -227,82 +314,74 @@ const styles = StyleSheet.create({
     },
     tagsRow: {
         flexDirection: 'row',
-        flexWrap: 'wrap',
         gap: spacing.sm,
-        marginBottom: spacing.lg,
+        marginBottom: spacing.md,
     },
-    coCard: {
-        backgroundColor: colors.primary + '10',
-        padding: spacing.md,
-        borderRadius: borderRadius.md,
-        borderWidth: 1,
-        borderColor: colors.primary + '30',
-        marginBottom: spacing.lg,
-    },
-    coTitle: {
-        ...typography.h3,
-        color: colors.textPrimary,
-        marginBottom: spacing.xs,
-    },
-    coDescription: {
-        ...typography.body,
-        color: colors.textSecondary,
-        marginBottom: spacing.sm,
-    },
-    intensityRow: {
+    ragHeader: {
         flexDirection: 'row',
-        alignItems: 'center',
-    },
-    intensityLabel: {
-        ...typography.caption,
-        color: colors.textSecondary,
-        marginRight: spacing.sm,
-    },
-    intensityDots: {
-        flexDirection: 'row',
-        gap: spacing.xs,
-        marginRight: spacing.sm,
-    },
-    intensityDot: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-    },
-    intensityDotFilled: {
-        backgroundColor: colors.primary,
-    },
-    intensityDotEmpty: {
-        backgroundColor: colors.iosGray5,
-    },
-    intensityValue: {
-        ...typography.captionBold,
-        color: colors.primary,
-    },
-    questionSection: {
-        marginBottom: spacing.lg,
-    },
-    sectionLabel: {
-        ...typography.h3,
-        color: colors.textPrimary,
-        marginBottom: spacing.sm,
-    },
-    questionText: {
-        ...typography.body,
-        color: colors.textPrimary,
-        lineHeight: 24,
-    },
-    optionsSection: {
-        marginBottom: spacing.lg,
-    },
-    optionCard: {
-        flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
         backgroundColor: colors.surface,
         padding: spacing.md,
         borderRadius: borderRadius.sm,
         borderWidth: 1,
         borderColor: colors.border,
+        marginBottom: spacing.xs,
+    },
+    ragTitle: {
+        ...typography.captionBold,
+        color: colors.textSecondary,
+    },
+    ragChevron: {
+        fontSize: 12,
+        color: colors.textSecondary,
+    },
+    ragContent: {
+        backgroundColor: colors.surface,
+        padding: spacing.md,
+        borderRadius: borderRadius.sm,
+        borderWidth: 1,
+        borderColor: colors.border,
+        marginTop: -1,
+        marginBottom: spacing.lg,
+    },
+    ragChunk: {
         marginBottom: spacing.sm,
+        paddingBottom: spacing.sm,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.divider,
+    },
+    ragText: {
+        ...typography.caption,
+        color: colors.textSecondary,
+        lineHeight: 18,
+    },
+    ragEmpty: {
+        ...typography.caption,
+        color: colors.textTertiary,
+        fontStyle: 'italic',
+    },
+    questionSection: {
+        marginBottom: spacing.lg,
+        marginTop: spacing.sm,
+    },
+    questionText: {
+        ...typography.h3,
+        color: colors.textPrimary,
+        lineHeight: 28,
+    },
+    optionsSection: {
+        gap: spacing.sm,
+        marginBottom: spacing.lg,
+    },
+    optionCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: spacing.md,
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: borderRadius.sm,
     },
     correctOption: {
         borderColor: colors.success,
@@ -310,73 +389,85 @@ const styles = StyleSheet.create({
     },
     optionLabel: {
         ...typography.bodyBold,
+        marginRight: spacing.md,
         color: colors.textPrimary,
-        marginRight: spacing.sm,
     },
     optionText: {
         ...typography.body,
-        color: colors.textPrimary,
         flex: 1,
+        color: colors.textPrimary,
     },
     correctMark: {
-        ...typography.caption,
         color: colors.success,
+        fontWeight: 'bold',
+        marginLeft: spacing.sm,
     },
-    explanationSection: {
-        marginBottom: spacing.lg,
-    },
-    explanationText: {
-        ...typography.body,
-        color: colors.textSecondary,
-        lineHeight: 22,
-    },
-    validationCard: {
-        backgroundColor: colors.warning + '10',
+    metaCard: {
+        backgroundColor: colors.primary + '10',
         padding: spacing.md,
         borderRadius: borderRadius.md,
-        borderWidth: 1,
-        borderColor: colors.warning + '30',
+        marginBottom: spacing.xl,
     },
-    validationScore: {
-        ...typography.h3,
-        color: colors.textPrimary,
+    metaTitle: {
+        ...typography.captionBold,
+        color: colors.textSecondary,
         marginBottom: spacing.sm,
+        textTransform: 'uppercase',
     },
-    warningBox: {
+    metaRow: {
         flexDirection: 'row',
-        alignItems: 'flex-start',
+        alignItems: 'center',
+        marginBottom: spacing.xs,
     },
-    warningIcon: {
-        fontSize: 16,
-        marginRight: spacing.xs,
+    metaLabel: {
+        ...typography.caption,
+        width: 40,
+        color: colors.textSecondary,
     },
-    warningText: {
+    chips: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 4,
+        flex: 1,
+    },
+    chip: {
+        ...typography.caption,
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+        overflow: 'hidden',
+    },
+    metaValue: {
         ...typography.caption,
         color: colors.textSecondary,
-        flex: 1,
     },
     actionBar: {
         flexDirection: 'row',
         padding: spacing.md,
         backgroundColor: colors.surface,
-        borderTopWidth: StyleSheet.hairlineWidth,
+        borderTopWidth: 1,
         borderTopColor: colors.divider,
-        gap: spacing.sm,
+        gap: spacing.md,
     },
     actionButton: {
         flex: 1,
-        paddingVertical: spacing.md,
-        borderRadius: borderRadius.md,
+        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.md,
+        gap: 8,
     },
     rejectButton: {
-        backgroundColor: colors.error + '15',
+        backgroundColor: colors.error + '10',
         borderWidth: 1,
         borderColor: colors.error,
     },
     quarantineButton: {
-        backgroundColor: colors.warning + '15',
+        backgroundColor: colors.warning + '10',
         borderWidth: 1,
         borderColor: colors.warning,
     },
@@ -384,8 +475,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.success,
     },
     actionIcon: {
-        fontSize: 20,
-        marginBottom: spacing.xs,
+        fontSize: 16,
     },
     actionLabel: {
         ...typography.captionBold,

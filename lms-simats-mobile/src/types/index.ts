@@ -67,6 +67,11 @@ export interface Question {
     status: 'pending' | 'approved' | 'rejected' | 'quarantined';
     createdAt: string;
     validationScore?: number;
+    ragContext?: string[];
+    rag_context?: string[] | string;
+    topicCOs?: string[];
+    topicLOs?: string[];
+    approvalFeedback?: string; // JSON string
 }
 
 // User types (from existing)

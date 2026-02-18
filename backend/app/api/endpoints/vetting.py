@@ -19,6 +19,80 @@ async def get_pending_batches(db: Session = Depends(get_db)):
     """Get all batches with pending questions"""
     return await vetting_service.get_pending_batches(db)
 
+@router.get("/batches")
+async def get_batches(status: Optional[str] = None, db: Session = Depends(get_db)):
+    """List batches with optional status filtering"""
+    from ...models import database
+    import json
+    from datetime import datetime
+    
+    rubrics = db.query(database.Rubric).order_by(
+        database.Rubric.created_at.desc()
+    ).all()
+    
+    batches = []
+    for r in rubrics:
+        total = db.query(database.Question).filter(
+            database.Question.rubric_id == r.id
+        ).count()
+        if total == 0:
+            continue
+            
+        pending = db.query(database.Question).filter(
+            database.Question.rubric_id == r.id, 
+            database.Question.status == "pending"
+        ).count()
+        approved = db.query(database.Question).filter(
+            database.Question.rubric_id == r.id, 
+            database.Question.status == "approved"
+        ).count()
+        rejected = db.query(database.Question).filter(
+            database.Question.rubric_id == r.id, 
+            database.Question.status == "rejected"
+        ).count()
+        quarantined = db.query(database.Question).filter(
+            database.Question.rubric_id == r.id, 
+            database.Question.status == "quarantined"
+        ).count()
+        
+        reviewed = approved + rejected + quarantined
+        
+        batch_status = "pending"
+        if pending == 0 and total > 0:
+            batch_status = "completed"
+        elif reviewed > 0:
+            batch_status = "in_progress"
+            
+        if status and batch_status != status:
+            continue
+            
+        batches.append({
+            "id": str(r.id),
+            "rubric_id": str(r.id),
+            "rubricId": str(r.id),
+            "subject_id": str(r.subject_id),
+            "subjectId": str(r.subject_id),
+            "title": r.title,
+            "generated_by": "Faculty",
+            "facultyName": "Faculty",
+            "total_questions": total,
+            "totalQuestions": total,
+            "pending_count": pending,
+            "approved_count": approved,
+            "approvedCount": approved,
+            "rejected_count": rejected,
+            "rejectedCount": rejected,
+            "quarantined_count": quarantined,
+            "quarantinedCount": quarantined,
+            "reviewedQuestions": reviewed,
+            "generated_at": r.created_at.isoformat() if r.created_at else None,
+            "generatedAt": r.created_at.isoformat() if r.created_at else None,
+            "status": batch_status,
+            "questions": []
+        })
+        
+    return batches
+
 @router.get("/batches/{batch_id}")
 async def get_batch_detail(batch_id: str, db: Session = Depends(get_db)):
     """
@@ -35,13 +109,14 @@ async def approve_question(
     vetter_id: str = Form(...),
     co_adjustment: Optional[str] = Form(None),  # JSON of adjusted CO mappings
     lo_adjustment: Optional[str] = Form(None),  # JSON of adjusted LO mappings
+    notes: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
     """Approve question, optionally with CO/LO intensity adjustments"""
     try:
         co_adj = json.loads(co_adjustment) if co_adjustment else None
         lo_adj = json.loads(lo_adjustment) if lo_adjustment else None
-        return await vetting_service.approve_question(db, question_id, vetter_id, co_adj, lo_adj)
+        return await vetting_service.approve_question(db, question_id, vetter_id, co_adj, lo_adj, notes)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
