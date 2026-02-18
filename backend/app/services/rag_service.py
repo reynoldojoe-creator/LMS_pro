@@ -88,9 +88,12 @@ class RAGService:
             # 2. Retrieve from Vector Store
             collection_name = f"subject_{subject_id}"
             
+            # Relaxed retrieval: Don't filter by topic_id strictly if it causes zero results.
+            # Ideally, we'd use an $or query, but Chroma's where clause is strict.
+            # To ensure we get context from syllabus (indexed by topic name) AND notes (indexed by topic_id),
+            # we'll omit the topic_id filter and rely on semantic similarity.
+            # This is "Fix 1" from the plan.
             where_filter = None
-            if topic_id:
-                where_filter = {"topic_id": str(topic_id)}
                 
             results = self.vector_store.query_similar(
                 collection_name=collection_name,

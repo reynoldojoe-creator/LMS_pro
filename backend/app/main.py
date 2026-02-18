@@ -172,6 +172,7 @@ async def list_rubrics(db: Session = Depends(get_db)):
         result.append({
             "id": str(r.id),
             "subjectId": str(r.subject_id),
+            "subjectName": subject.name if subject else "Unknown Subject",
             "examType": r.exam_type,
             "title": r.title,
             "duration": r.duration,
@@ -459,6 +460,69 @@ async def get_pending_batches(db: Session = Depends(get_db)):
             "questions": [] # Summaries don't need questions
         })
         
+    # Also include GeneratedBatch records that might have questions linked via batch_id
+    from .models.database import GeneratedBatch
+    
+    # Track which rubrics we've already processed to avoid duplicates
+    existing_rubric_ids = {b["rubricId"] for b in batches if b.get("rubricId")}
+    
+    gen_batches = db.query(GeneratedBatch).filter(
+        GeneratedBatch.status != "complete"
+    ).order_by(GeneratedBatch.generated_at.desc()).all()
+    
+    for gb in gen_batches:
+        # If this batch belongs to a rubric we already showed, skip it
+        if gb.rubric_id and str(gb.rubric_id) in existing_rubric_ids:
+            continue
+            
+        total = db.query(database.Question).filter(
+            database.Question.batch_id == gb.id
+        ).count()
+        
+        if total == 0:
+            continue
+            
+        pending = db.query(database.Question).filter(
+            database.Question.batch_id == gb.id,
+            database.Question.status == "pending"
+        ).count()
+        approved = db.query(database.Question).filter(
+            database.Question.batch_id == gb.id,
+            database.Question.status == "approved"
+        ).count()
+        rejected = db.query(database.Question).filter(
+            database.Question.batch_id == gb.id,
+            database.Question.status == "rejected"
+        ).count()
+        quarantined = db.query(database.Question).filter(
+            database.Question.batch_id == gb.id,
+            database.Question.status == "quarantined"
+        ).count()
+        
+        reviewed = approved + rejected + quarantined
+        
+        status = "pending"
+        if pending == 0 and total > 0:
+            status = "completed"
+        elif reviewed > 0:
+            status = "in_progress"
+            
+        batches.append({
+            "id": str(gb.id),
+            "rubricId": str(gb.rubric_id) if gb.rubric_id else None,
+            "subjectId": str(gb.subject_id),
+            "title": gb.title or "Generated Batch",
+            "facultyName": gb.generated_by or "Faculty",
+            "totalQuestions": total,
+            "reviewedQuestions": reviewed,
+            "approvedCount": approved,
+            "rejectedCount": rejected,
+            "quarantinedCount": quarantined,
+            "generatedAt": gb.generated_at.isoformat() if gb.generated_at else datetime.now().isoformat(),
+            "status": status,
+            "questions": []
+        })
+
     return batches
 
 @app.get("/vetting/batches")
@@ -511,12 +575,51 @@ async def get_batches(status: Optional[str] = None, db: Session = Depends(get_db
     return batches
 
 @app.get("/vetting/batches/{batch_id}")
-async def get_batch_details(batch_id: int, db: Session = Depends(get_db)):
+async def get_batch_details(batch_id: str, db: Session = Depends(get_db)):
+    # Try finding as Rubric first
+    # Note: batch_id here is likely a UUID string
     rubric = db.query(database.Rubric).filter(database.Rubric.id == batch_id).first()
-    if not rubric:
-        raise HTTPException(status_code=404, detail="Batch not found")
+    
+    if rubric:
+        # Search by rubric_id OR batch_id (some questions use batch_id instead)
+        # Using a robust query to catch both cases
+        questions = db.query(database.Question).filter(
+            (database.Question.rubric_id == str(rubric.id)) | 
+            (database.Question.batch_id == batch_id)
+        ).all()
         
-    questions = db.query(database.Question).filter(database.Question.rubric_id == rubric.id).all()
+    else:
+        # Try as GeneratedBatch ID
+        from .models.database import GeneratedBatch
+        gen_batch = db.query(GeneratedBatch).filter(GeneratedBatch.id == batch_id).first()
+        
+        if gen_batch:
+            questions = db.query(database.Question).filter(
+                (database.Question.batch_id == batch_id) |
+                (database.Question.rubric_id == str(gen_batch.rubric_id) if gen_batch.rubric_id else "")
+            ).all()
+            
+            # If we found the batch, we might also want the rubric details if available
+            if gen_batch.rubric_id:
+                rubric = db.query(database.Rubric).filter(database.Rubric.id == gen_batch.rubric_id).first()
+            
+            if not rubric:
+                 # Construct a rubric-like object for response compatibility
+                class PseudoRubric:
+                    def __init__(self, gb):
+                        self.id = gb.id
+                        self.subject_id = gb.subject_id
+                        self.title = gb.title or "Generated Batch"
+                        self.created_at = gb.generated_at
+                        
+                rubric = PseudoRubric(gen_batch)
+            
+        else:
+            raise HTTPException(status_code=404, detail="Batch not found")
+
+    if not questions and not rubric:
+         raise HTTPException(status_code=404, detail="Batch not found - no questions")
+
     
     # Calculate stats
     total = len(questions)
@@ -547,7 +650,9 @@ async def get_batch_details(batch_id: int, db: Session = Depends(get_db)):
             "correctAnswer": q.correct_answer,
             "status": q.status,
             "createdAt": "2024-01-01T00:00:00Z", # Placeholder
-            "validationScore": q.validation_score or 0
+            "validationScore": q.validation_score or 0,
+            "coMappings": [{"co_code": co.strip(), "intensity": 2} for co in (q.co_id or "").split(",") if co.strip()],
+            "loMappings": [{"lo_code": lo.strip(), "intensity": 2} for lo in (q.lo_id or "").split(",") if lo.strip()],
         })
         
     return {

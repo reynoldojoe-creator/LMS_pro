@@ -98,7 +98,22 @@ export const TrainModelModal: React.FC<Props> = ({
         } catch (err: any) {
             console.error("Start training error:", err);
             setStep('error');
-            setError(err.message || 'Failed to start training');
+
+            // Extract readable message from API error
+            let errorMsg = 'Failed to start training';
+            if (err?.response?.data?.detail) {
+                const detail = err.response.data.detail;
+                if (Array.isArray(detail)) {
+                    errorMsg = detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ');
+                } else if (typeof detail === 'string') {
+                    errorMsg = detail;
+                } else {
+                    errorMsg = JSON.stringify(detail);
+                }
+            } else if (typeof err?.message === 'string') {
+                errorMsg = err.message;
+            }
+            setError(errorMsg);
         }
     };
 

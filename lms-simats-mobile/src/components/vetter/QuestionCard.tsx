@@ -67,7 +67,16 @@ export const QuestionCard = ({
             {question.options && (
                 <View style={styles.optionsContainer}>
                     {/* Render options if MCQ */}
-                    <Text style={styles.metaLabel}>Options available</Text>
+                    {Object.entries(question.options).map(([key, value]) => {
+                        // Clean up prefixes like "A) ", "A. "
+                        const cleanText = (value as string).replace(new RegExp(`^${key}[).]\\s*`, 'i'), '');
+                        return (
+                            <View key={key} style={{ flexDirection: 'row', marginBottom: 4 }}>
+                                <Text style={{ fontWeight: 'bold', marginRight: 8 }}>{key}.</Text>
+                                <Text style={{ flex: 1, color: colors.textPrimary }}>{cleanText}</Text>
+                            </View>
+                        );
+                    })}
                 </View>
             )}
 
@@ -130,6 +139,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     },
     optionsContainer: {
         marginTop: spacing.sm,
+        padding: spacing.sm,
+        backgroundColor: colors.surface,
+        borderRadius: borderRadius.sm,
+        borderWidth: 1,
+        borderColor: colors.border,
     },
     actionsContainer: {
         flexDirection: 'row',

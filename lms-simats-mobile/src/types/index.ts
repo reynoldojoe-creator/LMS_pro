@@ -60,7 +60,8 @@ export interface Question {
     type: QuestionType;
     difficulty: DifficultyLevel;
     questionText: string;
-    options?: string[];  // For MCQ
+    bloomLevel?: string; // Added to match backend
+    options?: any;  // Changed to any/Record to support {"A": "text"} format
     correctAnswer?: string;  // For MCQ
     markingScheme?: string;  // For essay
     status: 'pending' | 'approved' | 'rejected' | 'quarantined';

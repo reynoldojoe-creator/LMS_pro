@@ -54,8 +54,9 @@ All distractors must be plausible but clearly wrong
 Question must be answerable ONLY from the given context
 Do not create ambiguous questions with multiple correct answers
 Ensure the question matches the requested difficulty level
-Do not include specific scholar names, years, or book references in the question text unless they are fundamental to the concept definitions in the syllabus.
-DO NOT start questions with "According to the text..." or "As mentioned in..."
+Do not include specific scholar names, years, or book references, Chapter numbers, or Page numbers in the question text.
+DO NOT start questions with "According to the text...", "As mentioned in...", or "Based on...".
+Options dictionary values must NOT contain the option letter prefix (e.g. "To restore..." NOT "A) To restore...").
 """
 
 SHORT_ANSWER_PROMPT_TEMPLATE = """
@@ -81,8 +82,8 @@ CONTEXT FROM SYLLABUS:
 IMPORTANT:
 - Generate exactly {count} questions.
 - Output MUST be valid JSON only. No markdown formatting.
-- Do not include specific scholar names, years, or book references in the question text unless they are fundamental to the concept definitions.
-- DO NOT start questions with "According to the text..." or "As mentioned in..."
+- Do not include specific scholar names, years, or book references, Chapter numbers, or Page numbers.
+- DO NOT start questions with "According to the text...", "As mentioned in...", or "Based on...".
 
 OUTPUT FORMAT (strict JSON): 
 {{
@@ -177,7 +178,7 @@ OUTPUT FORMAT (strict JSON):
   "questions": [
     {{
       "question_text": "...",
-      "options": {{"A": "...", "B": "...", "C": "...", "D": "..."}},
+      "options": {{"A": "Option text without prefix", "B": "Option text without prefix", "C": "...", "D": "..."}},
       "correct_answer": "B",
       "explanation": "...",
       "mapped_co": ["CO1"],

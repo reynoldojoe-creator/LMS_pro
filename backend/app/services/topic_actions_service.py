@@ -59,6 +59,10 @@ class TopicActionsService:
         # Step 1: Get topic and its CO mappings
         topic = await self._get_topic_with_cos(db, subject_id, topic_id)
         
+        # Get subject name for prompt context
+        subject = db.query(database.Subject).filter(database.Subject.id == subject_id).first()
+        subject_name = subject.name if subject else "Subject"
+        
         # Step 2: Retrieve relevant syllabus content (RAG)
         if pre_retrieved_context:
             context = pre_retrieved_context
@@ -101,7 +105,8 @@ class TopicActionsService:
             count=count,
             sample_questions=sample_questions,
             difficulty=difficulty,
-            skill_instructions=skill_instructions
+            skill_instructions=skill_instructions,
+            subject_name=subject_name
         )
         
         # Step 5: Save (is_reference=True, auto-approved)
@@ -361,7 +366,8 @@ class TopicActionsService:
         count: int,
         sample_questions: List[Dict],
         difficulty: str,
-        skill_instructions: str = ""
+        skill_instructions: str = "",
+        subject_name: str = "Subject"
     ) -> List[Dict]:
         """Generate questions using few-shot learning"""
         from ..prompts.generation_prompts import (
@@ -376,7 +382,7 @@ class TopicActionsService:
         # Use appropriate prompt template
         if question_type.lower() in ('mcq', 'multiple_choice'):
             prompt = MCQ_GENERATION_WITH_FEWSHOT.format(
-                subject_name="Subject",
+                subject_name=subject_name,
                 topic_name=topic['name'],
                 co_mappings=co_mappings_str,
                 lo_mappings=lo_mappings_str,
@@ -387,7 +393,7 @@ class TopicActionsService:
             )
         elif question_type.lower() in ('short_answer', 'short'):
             prompt = SHORT_ANSWER_PROMPT_TEMPLATE.format(
-                subject_name="Subject",
+                subject_name=subject_name,
                 rag_context=context[:3000], # Increased context
                 count=count,
                 topic=topic['name'],
@@ -398,7 +404,7 @@ class TopicActionsService:
             )
         elif question_type.lower() in ('essay', 'long_answer'):
             prompt = ESSAY_PROMPT_TEMPLATE.format(
-                subject_name="Subject",
+                subject_name=subject_name,
                 rag_context=context[:5000],
                 count=count,
                 topic=topic['name'],

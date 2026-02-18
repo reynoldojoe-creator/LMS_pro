@@ -40,16 +40,12 @@ async def run_training_job(job_id: str, topic_id: int, db_session_factory, job_m
             
         if job_meta and job_meta.get("sample_file_ids"):
             # Filter by specific sample files if provided
-            # Ensure IDs are integers
-            try:
-                # Convert to int, ignoring non-digits
-                sample_file_ids = [int(sid) for sid in job_meta["sample_file_ids"] if str(sid).isdigit()]
-            except:
-                sample_file_ids = []
-
+            # Frontend sends file paths as IDs
+            file_paths = job_meta["sample_file_ids"]
+            
             sample_questions = db.query(database.SampleQuestion).filter(
                 database.SampleQuestion.topic_id == topic_id,
-                database.SampleQuestion.id.in_(sample_file_ids)
+                database.SampleQuestion.file_path.in_(file_paths)
             ).all()
         else:
             # Default: use all
@@ -150,7 +146,7 @@ async def run_training_job(job_id: str, topic_id: int, db_session_factory, job_m
 
 
 class TrainRequest(BaseModel):
-    sample_file_ids: List[int] = []
+    sample_file_ids: List[str] = []
 
 @router.post("/topics/{topic_id}/train-model")
 async def train_model(
