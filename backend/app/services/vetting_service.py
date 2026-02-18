@@ -2,7 +2,7 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session, joinedload
 from datetime import datetime
 from ..models import vetting_models
-from ..models.database import Subject, GeneratedBatch, Question
+from ..models.database import Subject, GeneratedBatch, Question, Rubric
 from sqlalchemy import func
 
 class VettingService:
@@ -17,11 +17,146 @@ class VettingService:
         {"id": "other", "label": "Other", "prompt_fix": None}
     ]
     
-    async def get_pending_batches(self, db: Session) -> List[GeneratedBatch]:
-        """Get all batches with pending questions"""
-        return db.query(GeneratedBatch).filter(
-            GeneratedBatch.status != "complete"
-        ).order_by(GeneratedBatch.generated_at.desc()).all()
+    async def get_pending_batches(self, db: Session) -> list:
+        """Get all batches that have questions (both from GeneratedBatch and Rubric tables)"""
+        # from ..models import database # Already imported above
+        
+        batches = []
+        seen_rubric_ids = set()
+        
+        # Source 1: GeneratedBatch table (rubric-based generation)
+        gen_batches = db.query(GeneratedBatch).order_by(
+            GeneratedBatch.generated_at.desc()
+        ).all()
+        
+        for gb in gen_batches:
+            # Count questions linked to this batch via batch_id
+            total = db.query(Question).filter(
+                Question.batch_id == gb.id
+            ).count()
+            
+            if total == 0:
+                continue
+            
+            pending = db.query(Question).filter(
+                Question.batch_id == gb.id, 
+                Question.status == "pending"
+            ).count()
+            approved = db.query(Question).filter(
+                Question.batch_id == gb.id, 
+                Question.status == "approved"
+            ).count()
+            rejected = db.query(Question).filter(
+                Question.batch_id == gb.id, 
+                Question.status == "rejected"
+            ).count()
+            quarantined = db.query(Question).filter(
+                Question.batch_id == gb.id, 
+                Question.status == "quarantined"
+            ).count()
+            reviewed = approved + rejected + quarantined
+            
+            status = "pending"
+            if pending == 0 and total > 0:
+                status = "completed"
+            elif reviewed > 0:
+                status = "in_progress"
+            
+            batches.append({
+                "id": str(gb.id),
+                "rubric_id": str(gb.rubric_id) if gb.rubric_id else None,
+                "rubricId": str(gb.rubric_id) if gb.rubric_id else None,
+                "subject_id": gb.subject_id,
+                "subjectId": str(gb.subject_id) if gb.subject_id else None,
+                "title": gb.title or "Generated Batch",
+                "generated_by": gb.generated_by or "Faculty",
+                "facultyName": gb.generated_by or "Faculty",
+                "total_questions": total,
+                "totalQuestions": total,
+                "pending_count": pending,
+                "approved_count": approved,
+                "approvedCount": approved,
+                "rejected_count": rejected,
+                "rejectedCount": rejected,
+                "quarantined_count": quarantined,
+                "quarantinedCount": quarantined,
+                "reviewedQuestions": reviewed,
+                "generated_at": gb.generated_at.isoformat() if gb.generated_at else None,
+                "generatedAt": gb.generated_at.isoformat() if gb.generated_at else None,
+                "status": status,
+                "questions": []
+            })
+            
+            if gb.rubric_id:
+                seen_rubric_ids.add(str(gb.rubric_id))
+        
+        # Source 2: Questions linked directly to rubrics via rubric_id 
+        # (from the old sync generation path, or questions without batch_id)
+        rubrics = db.query(Rubric).order_by(
+            Rubric.created_at.desc()
+        ).all()
+        
+        for r in rubrics:
+            if str(r.id) in seen_rubric_ids:
+                continue  # Already covered by GeneratedBatch
+            
+            total = db.query(Question).filter(
+                Question.rubric_id == str(r.id)
+            ).count()
+            
+            if total == 0:
+                continue
+            
+            pending = db.query(Question).filter(
+                Question.rubric_id == str(r.id), 
+                Question.status == "pending"
+            ).count()
+            approved = db.query(Question).filter(
+                Question.rubric_id == str(r.id), 
+                Question.status == "approved"
+            ).count()
+            rejected = db.query(Question).filter(
+                Question.rubric_id == str(r.id), 
+                Question.status == "rejected"
+            ).count()
+            quarantined = db.query(Question).filter(
+                Question.rubric_id == str(r.id), 
+                Question.status == "quarantined"
+            ).count()
+            reviewed = approved + rejected + quarantined
+            
+            status = "pending"
+            if pending == 0 and total > 0:
+                status = "completed"
+            elif reviewed > 0:
+                status = "in_progress"
+            
+            batches.append({
+                "id": str(r.id),
+                "rubric_id": str(r.id),
+                "rubricId": str(r.id),
+                "subject_id": r.subject_id,
+                "subjectId": str(r.subject_id),
+                "title": r.title or "Untitled Rubric",
+                "generated_by": "Faculty",
+                "facultyName": "Faculty",
+                "total_questions": total,
+                "totalQuestions": total,
+                "pending_count": pending,
+                "approved_count": approved,
+                "approvedCount": approved,
+                "rejected_count": rejected,
+                "rejectedCount": rejected,
+                "quarantined_count": quarantined,
+                "quarantinedCount": quarantined,
+                "reviewedQuestions": reviewed,
+                "generated_at": r.generated_at.isoformat() if r.generated_at else (r.created_at.isoformat() if r.created_at else None),
+                "generatedAt": r.generated_at.isoformat() if r.generated_at else (r.created_at.isoformat() if r.created_at else None),
+                "status": status,
+                "questions": []
+            })
+        
+        return batches
     
     async def get_batch_detail(self, db: Session, batch_id: str) -> Dict[str, Any]:
         """
@@ -47,10 +182,16 @@ class VettingService:
         if not batch:
             return None
             
-        # Use unified Question model
+        # Use unified Question model — search by batch_id OR rubric_id
         from ..models import database
+        from sqlalchemy import or_
+        
         questions = db.query(database.Question).filter(
-            database.Question.batch_id == batch_id
+            or_(
+                database.Question.batch_id == batch_id,
+                database.Question.rubric_id == batch_id,
+                database.Question.rubric_id == (batch.rubric_id if batch and batch.rubric_id else batch_id)
+            )
         ).all()
         
         sections = {
@@ -78,10 +219,10 @@ class VettingService:
             "sections": sections,
             "questions": questions,  # Add flat list for frontend
             "progress": {
-                "total": batch.total_questions,
-                "approved": batch.approved_count,
-                "rejected": batch.rejected_count,
-                "pending": batch.pending_count
+                "total": batch.total_questions if batch else len(questions),
+                "approved": batch.approved_count if batch else sum(1 for q in questions if q.status == 'approved'),
+                "rejected": batch.rejected_count if batch else sum(1 for q in questions if q.status == 'rejected'),
+                "pending": batch.pending_count if batch else sum(1 for q in questions if q.status == 'pending')
             }
         }
     
