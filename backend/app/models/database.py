@@ -240,6 +240,7 @@ class TopicNotes(Base):
 
 # Import additional models so they register with Base.metadata
 from .topic_question import TopicQuestion
+from .sample_question import SampleQuestion
 
 
 def init_db():

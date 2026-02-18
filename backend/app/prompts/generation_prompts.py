@@ -14,6 +14,13 @@ Difficulty: {difficulty}
 Course Outcome: {co}
 Learning Outcome: {lo}
 
+CRITICAL REQUIREMENTS:
+- Each question MUST test a DIFFERENT concept or sub-topic
+- Do NOT generate duplicate or near-duplicate questions
+- Vary question stems (avoid starting all questions the same way)
+- Cover different Bloom's taxonomy levels within the difficulty band
+- If generating MCQs, ensure distractor sets are unique across questions
+
 DIFFICULTY GUIDE:
 Easy: Direct recall, single concept, from syllabus text
 Medium: Application, combines 2 concepts, 1-2 reasoning steps
@@ -60,8 +67,13 @@ CONSTRAINTS:
 Topic: {topic}
 Difficulty: {difficulty}
 Marks: {marks}
-Course Outcome: {co}
 Learning Outcome: {lo}
+
+CRITICAL REQUIREMENTS:
+- Each question MUST test a DIFFERENT concept or sub-topic
+- Do NOT generate duplicate or near-duplicate questions
+- Vary question stems
+- Cover different Bloom's taxonomy levels within the difficulty band
 
 CONTEXT FROM SYLLABUS: 
 {rag_context}
@@ -102,8 +114,13 @@ CONSTRAINTS:
 Topic: {topic}
 Difficulty: {difficulty}
 Marks: {marks}
-Course Outcome: {co}
 Learning Outcome: {lo}
+
+CRITICAL REQUIREMENTS:
+- Each question MUST test a DIFFERENT concept or sub-topic
+- Do NOT generate duplicate or near-duplicate questions
+- Vary question stems
+- Cover different Bloom's taxonomy levels within the difficulty band
 
 OUTPUT FORMAT (strict JSON): 
 {{
@@ -143,6 +160,8 @@ SYLLABUS CONTEXT:
 {rag_context}
 ---
 
+MAPPED LEARNING OUTCOMES: {lo_mappings}
+
 {few_shot_section}
 
 TASK: Generate {count} Multiple Choice Question(s).
@@ -161,7 +180,8 @@ OUTPUT FORMAT (strict JSON):
       "options": {{"A": "...", "B": "...", "C": "...", "D": "..."}},
       "correct_answer": "B",
       "explanation": "...",
-      "co_mapping": ["CO1"],
+      "mapped_co": ["CO1"],
+      "mapped_lo": "LO1",
       "difficulty": "{difficulty}"
     }}
   ]
@@ -181,6 +201,6 @@ def build_few_shot_section(sample_questions: list) -> str:
             for opt, text in q['options'].items():
                 examples += f"   {opt}) {text}\\n"
         examples += f"Answer: {q.get('correct_answer', 'N/A')}\\n"
-        examples += f"CO: {q.get('co_mapping', 'N/A')}\\n\\n"
+        examples += f"CO: {q.get('mapped_co', q.get('co_mapping', 'N/A'))}\\n\\n"
     examples += "---\\n"
     return examples

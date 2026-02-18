@@ -251,11 +251,36 @@ async def get_topic_detail(subject_id: int, topic_id: int, db: Session = Depends
     mapped_cos = [{"id": co.id, "code": co.code, "description": co.description} for co in topic.mapped_cos]
     mapped_los = [{"id": lo.id, "code": lo.code, "description": lo.description} for lo in topic.mapped_los]
 
+    today_date = datetime.utcnow()
+    
+    # Calculate total questions
+    total_questions = sum(question_counts.values())
+
+    # Fetch generated questions for this topic
+    questions = db.query(database.Question).filter(
+        database.Question.topic_id == topic_id
+    ).order_by(database.Question.id.desc()).all()
+
+    # Normalize questions for frontend
+    questions_list = []
+    for q in questions:
+        questions_list.append({
+            "id": str(q.id),
+            "questionText": q.question_text,
+            "questionType": q.question_type,
+            "difficulty": q.difficulty,
+            "marks": q.marks,
+            "CO": q.co_id,
+            "LO": q.lo_id
+        })
+
     return {
         "id": topic.id,
         "name": topic.name,
         "subject_id": topic.subject_id,
         "stats": question_counts,
+        "questionCount": total_questions, # Add total count
+        "questions": questions_list,      # Add questions list
         "samples": [],
         "notes": [{"id": n.id, "title": n.title, "path": n.file_path} for n in notes],
         "mapped_cos": mapped_cos,

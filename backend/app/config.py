@@ -20,6 +20,7 @@ EXTRACTION_MODEL = "qwen2.5:1.5b"
 
 # Fallback model (smallest usable)
 FALLBACK_MODEL = "llama3.2:1b"
+FAST_GENERATION_MODEL = "llama3.2:1b"
 
 # Semantic model (for structure detection/textbook processing)
 SEMANTIC_MODEL = "llama3.2:3b"
@@ -30,8 +31,8 @@ CHAIRMAN_MODEL = "qwen2.5:3b"
 
 # Performance settings
 OLLAMA_NUM_THREAD = 4
-OLLAMA_CONTEXT_SIZE = 4096
-MAX_TOKENS = 1000 # Default max tokens for generation
+OLLAMA_CONTEXT_SIZE = 2048 # Reduced from 4096 for speed
+MAX_TOKENS = 800 # Reduced from 1000
 TEMPERATURE = 0.7
 
 # Legacy aliases for backward compatibility

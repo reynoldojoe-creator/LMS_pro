@@ -77,7 +77,7 @@ class RAGService:
             logger.error(f"Error indexing document {file_path}: {e}")
             raise
 
-    def retrieve_context(self, query_text: str, subject_id: str, n_results: int = 5, topic_id: str = None) -> str:
+    def retrieve_context(self, query_text: str, subject_id: str, n_results: int = 8, topic_id: str = None) -> str:
         """
         Retrieves context string from the vector store for a given query.
         """
@@ -111,7 +111,7 @@ class RAGService:
             logger.error(f"Error retrieving context: {e}")
             raise
 
-    def query(self, query_text: str, subject_id: str, n_results: int = 5, topic_id: str = None) -> Dict[str, Any]:
+    def query(self, query_text: str, subject_id: str, n_results: int = 8, topic_id: str = None) -> Dict[str, Any]:
         """
         Queries the RAG system for relevant context.
         """

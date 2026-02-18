@@ -120,6 +120,12 @@ class GenerationManager:
             from ..models import vetting_models
             from ..models.database import GeneratedBatch
             
+            # Re-fetch rubric in this session to ensure it's attached
+            rubric_in_session = session.query(database.Rubric).filter(database.Rubric.id == rubric.id).first()
+            if not rubric_in_session:
+                raise ValueError("Rubric not found in session")
+
+            
             generation_status[batch_id]["status"] = "processing"
             logger.info(f"Starting rubric generation for rubric {rubric.id}, subject {rubric.subject_id}")
             
@@ -199,115 +205,66 @@ class GenerationManager:
                 # Distribute questions across topics
                 # Distribute questions across topics
                 remaining = count
-                consecutive_failures = 0
-                max_consecutive_failures = 5
+                # Generate ALL questions of this type in ONE call (or batched by topic if needed)
+                # For maximum speed as requested, we use one call per type.
+                # We use the first topic for RAG context, or we could randomize/rotate.
+                # Given the user request "Generate ALL questions of this type in ONE call", we do exactly that.
+                
+                target_topic_id = topic_ids[0] if topic_ids else None
+                
+                try:
+                    result = await topic_actions_service.quick_generate_questions(
+                        db=session,
+                        subject_id=rubric.subject_id,
+                        topic_id=target_topic_id,
+                        question_type=q_type,
+                        count=count,
+                        difficulty="medium"
+                    )
+                    
+                    questions = result.get("questions", [])
+                    
+                    if not questions:
+                        logger.warning(f"Generated 0 {q_type} questions. Skipping type.")
+                        continue
 
-                while remaining > 0:
-                    # ... (logic for round robin topic selection removed since we are now looping topics inside tasks?) 
-                    # WAIT, the original code had topic_ids list and picked one. 
-                    # If I move context retrieval outside while, I need to know WHICH topic.
-                    # The original code: current_topic_id = topic_ids[topic_index % len(topic_ids)]
-                    # So it switches topics PER question? That's bad for caching.
-                    # Refactoring loop: Query ALL generic questions, but if we want to optimize, we should generate 
-                    # batches per topic if possible. But with "1 question at a time" we can't easily.
-                    
-                    # Correction: I will retrieve context inside the loop but cache it?
-                    # Or simpler: Just retrieve it every time if switching topics.
-                    # BUT: The user explicitly asked to "Initialize RAGRetriever once".
-                    
-                    # Let's keep the round-robin logic but cache the context for the *current* topic_id 
-                    # if it's the same as previous.
-                    # OR, better: Iterating through topics sequentially for the total count is better for context reuse.
-                    # But the requirement might be mixed distribution.
-                    
-                    # Original logic was:
-                    # current_topic_id = topic_ids[topic_index % len(topic_ids)]
-                    
-                    # Let's retrieving context inside the loop, passing it to the function. 
-                    # It's an improvement over *implicit* retrieval because we can control it.
-                    
-                    current_topic_id = topic_ids[topic_index % len(topic_ids)]
-                    topic_index += 1
-                    
-                    # Fetch context for this specific topic (Cache could be added here later)
-                    # For now, just explicit retrieval satisfy the requirement "Call retriever... before generating"
-                    # Optimization: Simple in-memory cache for this batch
-                    
-                    topic_context = context_cache.get(current_topic_id)
-                    if not topic_context:
-                        t_obj = session.query(database.Topic).filter(database.Topic.id == current_topic_id).first()
-                        if t_obj:
-                            topic_context = topic_actions_service.rag_service.retrieve_context(
-                                query_text=t_obj.name,
-                                subject_id=str(rubric.subject_id),
-                                n_results=5
-                            )
-                            context_cache[current_topic_id] = topic_context
-                    
-                    # Generate ONE question at a time
-                    batch_count = 1
-                    
-                    try:
-                        result = await topic_actions_service.quick_generate_questions(
-                            db=session,
-                            subject_id=rubric.subject_id,
-                            topic_id=current_topic_id,
-                            question_type=q_type,
-                            count=batch_count,
-                            difficulty="medium",
-                            pre_retrieved_context=topic_context # PASS CONTEXT
-                        )
-                        
-                        questions = result.get("questions", [])
-                        
-                        if not questions:
-                            logger.warning(f"Generated 0 {q_type} questions for topic {current_topic_id}. Retrying...")
-                            consecutive_failures += 1
-                            if consecutive_failures >= max_consecutive_failures:
-                                logger.error(f"Max retries reached for {q_type}. Skipping question.")
-                                remaining -= batch_count
-                                consecutive_failures = 0
-                            continue
-                        
-                        # Reset failure counter on success
-                        consecutive_failures = 0
-
+                    # Process and save all generated questions
+                    for q in questions:
                         # Update question with rubric/batch info
-                        q = questions[0] # Since batch_count is 1
                         q.rubric_id = str(rubric.id)
                         q.batch_id = batch_id
                         q.is_reference = 0  # These go to vetting
                         q.status = "pending"
                         q.marks = task["marks_each"]
                         
-                        # CRITICAL: Commit IMMEDIATELY
-                        session.commit()
-                        
                         generated_ids.append(q.id)
-                        current_count += 1
                         
-                        # Decrease remaining
-                        remaining -= 1
+                    # Commit the batch
+                    session.commit()
+                    
+                    current_count += len(questions)
+                    generation_status[batch_id]["questions_generated"] = current_count
+                    generation_status[batch_id]["progress"] = int((current_count / total_questions) * 100)
+                    
+                    logger.info(f"Batch generated {len(questions)} {q_type} questions")
+                    
+                    # Yield control briefly
+                    await asyncio.sleep(0.1)
                         
-                        generation_status[batch_id]["questions_generated"] = current_count
-                        generation_status[batch_id]["progress"] = int((current_count / total_questions) * 100)
-                        
-                        logger.info(f"Generated 1 {q_type} question ({current_count}/{total_questions} total)")
-                        
-                        # Tiny sleep to yield control to event loop (prevents "Network Error" on health checks)
-                        await asyncio.sleep(0.05)
-                        
-                    except Exception as e:
-                        logger.error(f"Error generating {q_type} for topic {current_topic_id}: {e}", exc_info=True)
-                        consecutive_failures += 1
-                        if consecutive_failures >= max_consecutive_failures:
-                             remaining -= batch_count
-                             consecutive_failures = 0
-                        continue
+                except Exception as e:
+                    logger.error(f"Error producing batch for {q_type}: {e}", exc_info=True)
+                    # Don't crash the whole rubric, just log and continue? 
+                    # Or maybe re-raise? Failing a whole section is bad but better than hanging.
+                    continue
 
-            # 5) Update batch status
+            # 5) Update batch status AND Rubric status
             batch.status = "complete"
             batch.pending_count = len(generated_ids)
+            
+            # Update Rubric status to "generated" so frontend knows to show "View Questions"
+            rubric_in_session.status = "generated"
+            rubric_in_session.generated_at = datetime.utcnow()
+            
             session.commit()
 
             generation_status[batch_id]["status"] = "completed"

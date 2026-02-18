@@ -119,9 +119,22 @@ class TopicActionsService:
                 is_reference=1, # True
                 rubric_id=None,
                 status="approved", # No vetting needed
-                co_id=q.get("co_id") or q.get("mapped_co"),
-                lo_id=q.get("lo_id") or q.get("mapped_lo")
+                co_id=q.get("mapped_co") or q.get("co_mapping"),
+                lo_id=q.get("mapped_lo") or q.get("lo_mapping")
             )
+            
+            # Handle list formats for CO/LO
+            if isinstance(db_q.co_id, list):
+                db_q.co_id = ", ".join(db_q.co_id)
+            if isinstance(db_q.lo_id, list):
+                db_q.lo_id = ", ".join(db_q.lo_id)
+                
+            # Fallback to topic mappings if missing
+            if not db_q.co_id:
+                db_q.co_id = ", ".join(topic.get('co_mappings', []))
+            if not db_q.lo_id:
+                db_q.lo_id = ", ".join(topic.get('lo_mappings', []))
+
             db.add(db_q)
             saved_questions.append(db_q)
         
@@ -270,11 +283,13 @@ class TopicActionsService:
         
         # Get CO mappings directly from topic
         co_mappings = [co.code for co in topic.mapped_cos]
+        lo_mappings = [lo.code for lo in topic.mapped_los]
         
         return {
             "id": topic.id,
             "name": topic.name,
-            "co_mappings": co_mappings
+            "co_mappings": co_mappings,
+            "lo_mappings": lo_mappings
         }
     
     async def _get_sample_questions(
@@ -286,23 +301,45 @@ class TopicActionsService:
         limit: int = 3
     ) -> List[Dict]:
         """Fetch sample questions for few-shot learning"""
-        # Helper to get topic name
+        # Try to filter by topic_id first if possible, or topic name
         topic = db.query(database.Topic).filter(database.Topic.id == topic_id).first()
         topic_name = topic.name if topic else ""
 
-        samples = db.query(SampleQuestion).filter(
+        # Filter by subject and type. 
+        # Ideally we'd filter by topic_id if SampleQuestion had it. 
+        # Based on previous context, SampleQuestion has topic_id.
+        
+        query = db.query(SampleQuestion).filter(
             SampleQuestion.subject_id == subject_id,
-            SampleQuestion.topic == topic_name,  # Use topic name
             SampleQuestion.question_type == question_type
-        ).limit(limit).all()
+        )
+        
+        # Prefer ID match, fallback to name
+        if hasattr(SampleQuestion, 'topic_id'):
+             query = query.filter(SampleQuestion.topic_id == topic_id)
+        else:
+             query = query.filter(SampleQuestion.topic == topic_name)
+             
+        samples = query.limit(limit).all()
         
         result = []
         for s in samples:
+            # Parse options if JSON string
+            options = s.options
+            if isinstance(options, str):
+                try:
+                    import json
+                    options = json.loads(options)
+                except:
+                    options = {}
+            elif not options:
+                options = {}
+
             result.append({
                 "question_text": s.question_text,
-                "options": {},  # Would need to parse if stored
-                "correct_answer": "N/A",
-                "co_mapping": "N/A"
+                "options": options,
+                "correct_answer": s.correct_answer or "N/A",
+                "co_mapping": s.co_mapping or "N/A"
             })
         
         return result
@@ -325,6 +362,7 @@ class TopicActionsService:
         
         few_shot_section = build_few_shot_section(sample_questions)
         co_mappings_str = ", ".join(topic.get('co_mappings', [])) or "CO1"
+        lo_mappings_str = ", ".join(topic.get('lo_mappings', [])) or "LO1"
         
         # Use appropriate prompt template
         if question_type.lower() in ('mcq', 'multiple_choice'):
@@ -332,7 +370,8 @@ class TopicActionsService:
                 subject_name="Subject",
                 topic_name=topic['name'],
                 co_mappings=co_mappings_str,
-                rag_context=context[:3000],
+                lo_mappings=lo_mappings_str,
+                rag_context=context[:5000],
                 few_shot_section=few_shot_section,
                 count=count,
                 difficulty=difficulty
@@ -340,31 +379,31 @@ class TopicActionsService:
         elif question_type.lower() in ('short_answer', 'short'):
             prompt = SHORT_ANSWER_PROMPT_TEMPLATE.format(
                 subject_name="Subject",
-                rag_context=context[:2000], # Reduced context for speed
+                rag_context=context[:3000], # Increased context
                 count=count,
                 topic=topic['name'],
                 difficulty=difficulty,
                 marks=6,
                 word_count=100,
                 co=co_mappings_str,
-                lo="LO1"
+                lo=lo_mappings_str
             )
         elif question_type.lower() in ('essay', 'long_answer'):
             prompt = ESSAY_PROMPT_TEMPLATE.format(
                 subject_name="Subject",
-                rag_context=context[:3000],
+                rag_context=context[:5000],
                 count=count,
                 topic=topic['name'],
                 difficulty=difficulty,
                 marks=10,
                 co=co_mappings_str,
-                lo="LO1"
+                lo=lo_mappings_str
             )
         else:
             # Generic fallback — still request JSON
             prompt = f"""Generate {count} {question_type} questions about {topic['name']}.
 
-CONTEXT: {context[:2000]}
+CONTEXT: {context[:3000]}
 
 OUTPUT FORMAT (strict JSON):
 {{
@@ -381,34 +420,49 @@ OUTPUT FORMAT (strict JSON):
         if skill_instructions:
             prompt = f"{skill_instructions}\n\n{prompt}"
         
-        # Step: Hybrid Generation (Council of LLMs)
-        logger.info(f"Using Hybrid Generation System for {count} {question_type} questions")
+        # Direct single-call generation (replaces slow hybrid council)
+        logger.info(f"Generating {count} {question_type} questions directly")
         
-        generated_questions = []
-        for _ in range(count):
-             # Generate one by one using the Council
-             try:
-                 result = await self.hybrid_generator.generate_question(
-                     prompt_template=prompt, # Prompt already has context and few-shot
-                     topic_id=topic['id'],
-                     context={} 
-                 )
-                 
-                 # Result has 'selected' which is the question dict
-                 q_data = result.get('selected', {})
-                 # Ensure it matches expected structure
-                 if q_data:
-                     # Add metadata about variant selection logic if needed
-                     q_data['meta_selection_reason'] = result.get('selection_reason')
-                     q_data['meta_chairman_choice'] = result.get('chairman_choice')
-                     generated_questions.append(q_data)
-                     
-             except Exception as e:
-                 logger.error(f"Hybrid generation failed for a question: {e}")
-                 # Fallback? OR just continue
-                 continue
+        try:
+            # Request slightly more to allow for valid JSON parsing and dedup availability
+            # But the prompt says {count}. Let's stick to {count} for now to avoid confusion.
+            
+            result = await self.llm_service.generate_json(
+                prompt=prompt,
+                model=config.GENERATION_MODEL, # Verify config.GENERATION_MODEL exists/is correct
+                temperature=0.7,
+                max_tokens=3000 if count <= 3 else 4000
+            )
+            
+            generated_questions = result.get("questions", [])
+            
+            # Deduplication
+            unique_questions = []
+            seen_texts = []
+            from difflib import SequenceMatcher
+            
+            for q in generated_questions:
+                q_text = q.get("question_text", "")
+                if not q_text or len(q_text) < 5: continue
+                
+                is_dup = False
+                for seen in seen_texts:
+                    ratio = SequenceMatcher(None, q_text.lower(), seen.lower()).ratio()
+                    if ratio > 0.75:
+                        is_dup = True
+                        break
+                
+                if not is_dup:
+                    unique_questions.append(q)
+                    seen_texts.append(q_text)
+            
+            # If we lost too many to dedup, we might need to generate more using the loop logic?
+            # For now, just return what we have.
+            return unique_questions[:count]
 
-        return generated_questions
+        except Exception as e:
+            logger.error(f"Generation failed: {e}")
+            return []
     
     def _parse_csv_questions(self, file_content: bytes, question_type: str) -> List[Dict]:
         """Parse CSV file with questions"""

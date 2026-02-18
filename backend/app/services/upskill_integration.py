@@ -271,13 +271,23 @@ LOs: {', '.join(los)}
         examples = []
         for q in sample_questions[:10]:  # Use up to 10 examples
             # Handle SampleQuestion object or dict
-            q_type = getattr(q, 'question_type', q.get('question_type', 'question'))
-            content = getattr(q, 'question_text', q.get('question_text', ''))
-            topic = getattr(q, 'topic', q.get('topic', ''))
+            q_type = getattr(q, 'question_type', 'question')
+            content = getattr(q, 'question_text', '')
             
-            input_text = f"Generate a {q_type}"
-            if topic:
-                input_text += f" about {topic}"
+            # Detect difficulty if not present
+            diff = getattr(q, 'difficulty', None)
+            if not diff:
+                marks = getattr(q, 'marks', 0)
+                if marks <= 2: diff = 'easy'
+                elif marks <= 5: diff = 'medium'
+                else: diff = 'hard'
+            
+            input_text = f"Generate a {diff} {q_type}"
+            
+            # Add topic if available
+            topic_hint = getattr(q, 'topic', '')
+            if topic_hint:
+                input_text += f" about {topic_hint}"
                 
             output_text = content
             

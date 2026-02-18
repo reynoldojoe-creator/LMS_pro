@@ -1,11 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Body
 from sqlalchemy.orm import Session
-from typing import Dict, Any
+from typing import Dict, Any, List
 import uuid
 import asyncio
 import random
+import json
+import os
 from datetime import datetime
-from ...models import database
+from pydantic import BaseModel
 from ...models import database
 
 router = APIRouter(
@@ -22,7 +24,7 @@ from ...api.deps import get_db
 
 # ...
 
-async def run_training_job(job_id: str, topic_id: int, db_session_factory):
+async def run_training_job(job_id: str, topic_id: int, db_session_factory, job_meta: dict = None):
     """
     Runs the actual Upskill training process in background.
     """
@@ -36,7 +38,15 @@ async def run_training_job(job_id: str, topic_id: int, db_session_factory):
         if not topic:
             raise Exception("Topic not found during training")
             
-        sample_questions = db.query(database.SampleQuestion).filter(database.SampleQuestion.topic_id == topic_id).all()
+        if job_meta and job_meta.get("sample_file_ids"):
+            # Filter by specific sample files if provided
+            sample_questions = db.query(database.SampleQuestion).filter(
+                database.SampleQuestion.topic_id == topic_id,
+                database.SampleQuestion.id.in_(job_meta["sample_file_ids"])
+            ).all()
+        else:
+            # Default: use all
+            sample_questions = db.query(database.SampleQuestion).filter(database.SampleQuestion.topic_id == topic_id).all()
         notes = db.query(database.TopicNotes).filter(database.TopicNotes.topic_id == topic_id).all()
         
         # Get COs and LOs
@@ -130,9 +140,30 @@ async def run_training_job(job_id: str, topic_id: int, db_session_factory):
     finally:
         db.close()
 
+class TrainModelRequest(BaseModel):
+    sample_file_ids: List[str] = []
+
 @router.post("/topics/{topic_id}/train-model")
 async def train_model(
     topic_id: int, 
+    request: TrainModelRequest = Body(...), # Or just body if simple
+    background_tasks: BackgroundTasks = None, # Make sure this is injected
+    db: Session = Depends(get_db)
+):
+    # Actually we should use Pydantic model for body if possible, or just receive list
+    # But here let's stick to simple since we might change sig
+    pass
+
+# Redefining to be cleaner
+from pydantic import BaseModel
+
+class TrainRequest(BaseModel):
+    sample_file_ids: List[str] = []
+
+@router.post("/topics/{topic_id}/train-model")
+async def train_model(
+    topic_id: int,
+    request: TrainRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
@@ -149,9 +180,42 @@ async def train_model(
         "created_at": datetime.utcnow()
     }
     
-    background_tasks.add_task(run_training_job, job_id, topic_id, database.SessionLocal)
+    # Pass metadata to job
+    job_meta = {"sample_file_ids": request.sample_file_ids}
+    
+    background_tasks.add_task(run_training_job, job_id, topic_id, database.SessionLocal, job_meta)
     
     return {"job_id": job_id, "status": "pending"}
+
+@router.get("/topics/{topic_id}/sample-files")
+async def get_sample_files(topic_id: int, db: Session = Depends(get_db)):
+    """Get list of sample files uploaded for this topic"""
+    # Group by file_path or just list distinct uploads
+    # Since SampleQuestion has 'file_path' and 'uploaded_at', we can group by them.
+    # But for simplicity, we can return individual 'batches' if we had a batch ID.
+    # We don't have a batch ID on SampleQuestion table shown in previous steps.
+    # We have 'file_path'. Let's group by that.
+    
+    questions = db.query(database.SampleQuestion.file_path, database.SampleQuestion.uploaded_at, database.SampleQuestion.id).filter(
+        database.SampleQuestion.topic_id == topic_id
+    ).all()
+    
+    # Group in python
+    files_map = {}
+    for q in questions:
+        path = q.file_path or "Manual Entry"
+        if path not in files_map:
+            files_map[path] = {
+                "id": path, # Use path as ID for grouping? No, we need question IDs.
+                "name": os.path.basename(path),
+                "uploaded_at": q.uploaded_at,
+                "count": 0,
+                "question_ids": []
+            }
+        files_map[path]["count"] += 1
+        files_map[path]["question_ids"].append(q.id)
+        
+    return list(files_map.values())
 
 @router.get("/status/{job_id}")
 async def get_training_status(job_id: str):
