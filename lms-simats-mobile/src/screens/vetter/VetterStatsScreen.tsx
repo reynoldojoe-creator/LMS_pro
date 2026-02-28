@@ -1,7 +1,9 @@
 import React, { useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, typography, spacing} from '../../theme';
+import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
 import { useVetterStore } from '../../store';
 import { LoadingSpinner } from '../../components/common';
 
@@ -26,7 +28,7 @@ export const VetterStatsScreen = () => {
                 <Text style={styles.headerTitle}>Statistics</Text>
             </View>
 
-            <ScrollView style={styles.scrollView}>
+            <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 100 }}>
                 {/* Summary Stats */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Review Summary</Text>

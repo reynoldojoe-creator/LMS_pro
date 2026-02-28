@@ -1,7 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, typography, spacing} from '../../theme';
+import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { spacing, borderRadius } from '../../theme/spacing';
 
 interface ToastProps {
     visible: boolean;

@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Animated, ActivityIndicator } from 'react-native';
 import { Button } from 'react-native-elements';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing} from '../theme';
+import { colors } from '../theme/colors';
+import { typography } from '../theme/typography';
+import { spacing } from '../theme/spacing';
 import { useFacultyStore } from '../store/facultyStore';
 
 interface Props {

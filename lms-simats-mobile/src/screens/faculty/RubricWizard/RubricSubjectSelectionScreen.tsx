@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { colors, typography, spacing} from '../../../theme';
+import { colors } from '../../../theme/colors';
+import { typography } from '../../../theme/typography';
+import { spacing } from '../../../theme/spacing';
 import { useFacultyStore } from '../../../store';
-import { Input } from '../../../components/common';
+import { Input, ScreenBackground, ModernNavBar } from '../../../components/common';
 import { Ionicons } from '@expo/vector-icons';
 
 type Props = NativeStackScreenProps<any, 'RubricSubjectSelection'>;
@@ -27,14 +28,12 @@ export const RubricSubjectSelectionScreen = ({ navigation }: Props) => {
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Ionicons name="close" size={24} color={colors.textPrimary} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Select Subject</Text>
-                <View style={{ width: 24 }} />
-            </View>
+        <ScreenBackground>
+            <ModernNavBar
+                title="Select Subject"
+                showBack
+                onBack={() => navigation.goBack()}
+            />
 
             <View style={styles.paddings}>
                 <Input
@@ -42,7 +41,8 @@ export const RubricSubjectSelectionScreen = ({ navigation }: Props) => {
                     placeholder="Search subjects..."
                     value={search}
                     onChangeText={setSearch}
-                    variant="search"
+                    variant="filled"
+                    leftIcon="search"
                 />
             </View>
 
@@ -63,7 +63,7 @@ export const RubricSubjectSelectionScreen = ({ navigation }: Props) => {
                     </TouchableOpacity>
                 )}
             />
-        </SafeAreaView>
+        </ScreenBackground>
     );
 };
 
@@ -91,6 +91,7 @@ const styles = StyleSheet.create({
     },
     listContent: {
         paddingHorizontal: spacing.md,
+        paddingBottom: 120, // Added padding for tab bar visibility
     },
     item: {
         flexDirection: 'row',

@@ -1,10 +1,13 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput } from 'react-native';
 import { useFormContext, Controller } from 'react-hook-form';
-import { colors, typography, spacing } from '../../../../theme';
-import { Card, Button, Input, Picker } from '../../../../components/common';
+import { colors } from '../../../../theme/colors';
+import { typography } from '../../../../theme/typography';
+import { spacing } from '../../../../theme/spacing';
+import { Card, ModernButton, Input, Picker } from '../../../../components/common';
 import { CODistributionInput } from '../components/CODistributionInput';
 import { LODistributionInput } from '../components/LODistributionInput';
+import { BloomDistributionInput } from '../components/BloomDistributionInput';
 
 interface Props {
     subject: any;
@@ -106,194 +109,214 @@ export const FinalExamForm = ({ subject, onSubmit }: Props) => {
             </Card>
 
             <Card style={styles.card}>
+                <Controller
+                    control={control}
+                    name="bloom_distribution"
+                    defaultValue={{ K1: 10, K2: 20, K3: 30, K4: 25, K5: 10, K6: 5 }}
+                    render={({ field: { value, onChange } }) => (
+                        <BloomDistributionInput
+                            value={value || {}}
+                            onChange={onChange}
+                        />
+                    )}
+                />
+            </Card>
+
+            <Card style={styles.card}>
                 <Text style={styles.sectionTitle}>Question Pattern</Text>
                 <Text style={styles.helperLabel}>Define the number and marks for each question type</Text>
 
                 {/* MCQ Row */}
                 <View style={styles.qpRow}>
                     <Text style={styles.qpLabel}>MCQ</Text>
-                    <View style={styles.qpInputs}>
-                        <View style={styles.qpInputGroup}>
-                            <Text style={styles.qpInputLabel}>Count</Text>
-                            <Controller
-                                control={control}
-                                name="question_distribution.mcq.count"
-                                defaultValue={20}
-                                render={({ field: { onChange, value } }) => (
-                                    <TextInput
-                                        style={styles.qpInput}
-                                        value={value?.toString()}
-                                        onChangeText={(t) => onChange(parseInt(t) || 0)}
-                                        keyboardType="number-pad"
-                                        placeholderTextColor={colors.textTertiary}
-                                    />
-                                )}
-                            />
-                        </View>
-                        <Text style={styles.qpSeparator}>×</Text>
-                        <View style={styles.qpInputGroup}>
-                            <Text style={styles.qpInputLabel}>Marks</Text>
-                            <Controller
-                                control={control}
-                                name="question_distribution.mcq.marks_each"
-                                defaultValue={2}
-                                render={({ field: { onChange, value } }) => (
-                                    <TextInput
-                                        style={styles.qpInput}
-                                        value={value?.toString()}
-                                        onChangeText={(t) => onChange(parseInt(t) || 0)}
-                                        keyboardType="number-pad"
-                                        placeholderTextColor={colors.textTertiary}
-                                    />
-                                )}
-                            />
-                        </View>
-                    </View>
-                    <View style={styles.difficultyContainer}>
-                        <Controller
-                            control={control}
-                            name="question_distribution.mcq.difficulty"
-                            defaultValue="medium"
-                            render={({ field: { onChange, value } }) => (
-                                <Picker
-                                    value={value}
-                                    onChange={onChange}
-                                    options={[
-                                        { label: 'Easy', value: 'easy' },
-                                        { label: 'Medium', value: 'medium' },
-                                        { label: 'Hard', value: 'hard' }
-                                    ]}
-                                    placeholder="Difficulty"
+                    <View style={styles.qpControls}>
+                        <View style={styles.qpInputs}>
+                            <View style={styles.qpInputGroup}>
+                                <Text style={styles.qpInputLabel}>Count</Text>
+                                <Controller
+                                    control={control}
+                                    name="question_distribution.mcq.count"
+                                    defaultValue={0}
+                                    render={({ field: { onChange, value } }) => (
+                                        <TextInput
+                                            style={styles.qpInput}
+                                            value={value?.toString()}
+                                            onChangeText={(t) => onChange(Math.min(parseInt(t) || 0, 10))}
+                                            keyboardType="number-pad"
+                                            placeholderTextColor={colors.textTertiary}
+                                        />
+                                    )}
                                 />
-                            )}
-                        />
+                            </View>
+                            <Text style={styles.qpSeparator}>×</Text>
+                            <View style={styles.qpInputGroup}>
+                                <Text style={styles.qpInputLabel}>Marks</Text>
+                                <Controller
+                                    control={control}
+                                    name="question_distribution.mcq.marks_each"
+                                    defaultValue={1}
+                                    render={({ field: { onChange, value } }) => (
+                                        <TextInput
+                                            style={styles.qpInput}
+                                            value={value?.toString()}
+                                            onChangeText={(t) => onChange(parseInt(t) || 0)}
+                                            keyboardType="number-pad"
+                                            placeholderTextColor={colors.textTertiary}
+                                        />
+                                    )}
+                                />
+                            </View>
+                        </View>
+                        <View style={styles.difficultyContainer}>
+                            <Controller
+                                control={control}
+                                name="question_distribution.mcq.difficulty"
+                                defaultValue=""
+                                render={({ field: { onChange, value } }) => (
+                                    <Picker
+                                        value={value}
+                                        onChange={onChange}
+                                        options={[
+                                            { label: 'Easy', value: 'easy' },
+                                            { label: 'Medium', value: 'medium' },
+                                            { label: 'Hard', value: 'hard' }
+                                        ]}
+                                        placeholder="Difficulty"
+                                    />
+                                )}
+                            />
+                        </View>
                     </View>
                 </View>
 
                 {/* Short Answer Row */}
                 <View style={styles.qpRow}>
                     <Text style={styles.qpLabel}>Short Answer</Text>
-                    <View style={styles.qpInputs}>
-                        <View style={styles.qpInputGroup}>
-                            <Text style={styles.qpInputLabel}>Count</Text>
-                            <Controller
-                                control={control}
-                                name="question_distribution.short_answer.count"
-                                defaultValue={5}
-                                render={({ field: { onChange, value } }) => (
-                                    <TextInput
-                                        style={styles.qpInput}
-                                        value={value?.toString()}
-                                        onChangeText={(t) => onChange(parseInt(t) || 0)}
-                                        keyboardType="number-pad"
-                                        placeholderTextColor={colors.textTertiary}
-                                    />
-                                )}
-                            />
-                        </View>
-                        <Text style={styles.qpSeparator}>×</Text>
-                        <View style={styles.qpInputGroup}>
-                            <Text style={styles.qpInputLabel}>Marks</Text>
-                            <Controller
-                                control={control}
-                                name="question_distribution.short_answer.marks_each"
-                                defaultValue={6}
-                                render={({ field: { onChange, value } }) => (
-                                    <TextInput
-                                        style={styles.qpInput}
-                                        value={value?.toString()}
-                                        onChangeText={(t) => onChange(parseInt(t) || 0)}
-                                        keyboardType="number-pad"
-                                        placeholderTextColor={colors.textTertiary}
-                                    />
-                                )}
-                            />
-                        </View>
-                    </View>
-                    <View style={styles.difficultyContainer}>
-                        <Controller
-                            control={control}
-                            name="question_distribution.short_answer.difficulty"
-                            defaultValue="medium"
-                            render={({ field: { onChange, value } }) => (
-                                <Picker
-                                    value={value}
-                                    onChange={onChange}
-                                    options={[
-                                        { label: 'Easy', value: 'easy' },
-                                        { label: 'Medium', value: 'medium' },
-                                        { label: 'Hard', value: 'hard' }
-                                    ]}
-                                    placeholder="Difficulty"
+                    <View style={styles.qpControls}>
+                        <View style={styles.qpInputs}>
+                            <View style={styles.qpInputGroup}>
+                                <Text style={styles.qpInputLabel}>Count</Text>
+                                <Controller
+                                    control={control}
+                                    name="question_distribution.short_answer.count"
+                                    defaultValue={0}
+                                    render={({ field: { onChange, value } }) => (
+                                        <TextInput
+                                            style={styles.qpInput}
+                                            value={value?.toString()}
+                                            onChangeText={(t) => onChange(Math.min(parseInt(t) || 0, 10))}
+                                            keyboardType="number-pad"
+                                            placeholderTextColor={colors.textTertiary}
+                                        />
+                                    )}
                                 />
-                            )}
-                        />
+                            </View>
+                            <Text style={styles.qpSeparator}>×</Text>
+                            <View style={styles.qpInputGroup}>
+                                <Text style={styles.qpInputLabel}>Marks</Text>
+                                <Controller
+                                    control={control}
+                                    name="question_distribution.short_answer.marks_each"
+                                    defaultValue={5}
+                                    render={({ field: { onChange, value } }) => (
+                                        <TextInput
+                                            style={styles.qpInput}
+                                            value={value?.toString()}
+                                            onChangeText={(t) => onChange(parseInt(t) || 0)}
+                                            keyboardType="number-pad"
+                                            placeholderTextColor={colors.textTertiary}
+                                        />
+                                    )}
+                                />
+                            </View>
+                        </View>
+                        <View style={styles.difficultyContainer}>
+                            <Controller
+                                control={control}
+                                name="question_distribution.short_answer.difficulty"
+                                defaultValue=""
+                                render={({ field: { onChange, value } }) => (
+                                    <Picker
+                                        value={value}
+                                        onChange={onChange}
+                                        options={[
+                                            { label: 'Easy', value: 'easy' },
+                                            { label: 'Medium', value: 'medium' },
+                                            { label: 'Hard', value: 'hard' }
+                                        ]}
+                                        placeholder="Difficulty"
+                                    />
+                                )}
+                            />
+                        </View>
                     </View>
                 </View>
 
                 {/* Essay Row */}
                 <View style={styles.qpRow}>
                     <Text style={styles.qpLabel}>Essay</Text>
-                    <View style={styles.qpInputs}>
-                        <View style={styles.qpInputGroup}>
-                            <Text style={styles.qpInputLabel}>Count</Text>
-                            <Controller
-                                control={control}
-                                name="question_distribution.essay.count"
-                                defaultValue={3}
-                                render={({ field: { onChange, value } }) => (
-                                    <TextInput
-                                        style={styles.qpInput}
-                                        value={value?.toString()}
-                                        onChangeText={(t) => onChange(parseInt(t) || 0)}
-                                        keyboardType="number-pad"
-                                        placeholderTextColor={colors.textTertiary}
-                                    />
-                                )}
-                            />
-                        </View>
-                        <Text style={styles.qpSeparator}>×</Text>
-                        <View style={styles.qpInputGroup}>
-                            <Text style={styles.qpInputLabel}>Marks</Text>
-                            <Controller
-                                control={control}
-                                name="question_distribution.essay.marks_each"
-                                defaultValue={10}
-                                render={({ field: { onChange, value } }) => (
-                                    <TextInput
-                                        style={styles.qpInput}
-                                        value={value?.toString()}
-                                        onChangeText={(t) => onChange(parseInt(t) || 0)}
-                                        keyboardType="number-pad"
-                                        placeholderTextColor={colors.textTertiary}
-                                    />
-                                )}
-                            />
-                        </View>
-                    </View>
-                    <View style={styles.difficultyContainer}>
-                        <Controller
-                            control={control}
-                            name="question_distribution.essay.difficulty"
-                            defaultValue="medium"
-                            render={({ field: { onChange, value } }) => (
-                                <Picker
-                                    value={value}
-                                    onChange={onChange}
-                                    options={[
-                                        { label: 'Easy', value: 'easy' },
-                                        { label: 'Medium', value: 'medium' },
-                                        { label: 'Hard', value: 'hard' }
-                                    ]}
-                                    placeholder="Difficulty"
+                    <View style={styles.qpControls}>
+                        <View style={styles.qpInputs}>
+                            <View style={styles.qpInputGroup}>
+                                <Text style={styles.qpInputLabel}>Count</Text>
+                                <Controller
+                                    control={control}
+                                    name="question_distribution.essay.count"
+                                    defaultValue={0}
+                                    render={({ field: { onChange, value } }) => (
+                                        <TextInput
+                                            style={styles.qpInput}
+                                            value={value?.toString()}
+                                            onChangeText={(t) => onChange(Math.min(parseInt(t) || 0, 10))}
+                                            keyboardType="number-pad"
+                                            placeholderTextColor={colors.textTertiary}
+                                        />
+                                    )}
                                 />
-                            )}
-                        />
+                            </View>
+                            <Text style={styles.qpSeparator}>×</Text>
+                            <View style={styles.qpInputGroup}>
+                                <Text style={styles.qpInputLabel}>Marks</Text>
+                                <Controller
+                                    control={control}
+                                    name="question_distribution.essay.marks_each"
+                                    defaultValue={10}
+                                    render={({ field: { onChange, value } }) => (
+                                        <TextInput
+                                            style={styles.qpInput}
+                                            value={value?.toString()}
+                                            onChangeText={(t) => onChange(parseInt(t) || 0)}
+                                            keyboardType="number-pad"
+                                            placeholderTextColor={colors.textTertiary}
+                                        />
+                                    )}
+                                />
+                            </View>
+                        </View>
+                        <View style={styles.difficultyContainer}>
+                            <Controller
+                                control={control}
+                                name="question_distribution.essay.difficulty"
+                                defaultValue=""
+                                render={({ field: { onChange, value } }) => (
+                                    <Picker
+                                        value={value}
+                                        onChange={onChange}
+                                        options={[
+                                            { label: 'Easy', value: 'easy' },
+                                            { label: 'Medium', value: 'medium' },
+                                            { label: 'Hard', value: 'hard' }
+                                        ]}
+                                        placeholder="Difficulty"
+                                    />
+                                )}
+                            />
+                        </View>
                     </View>
                 </View>
             </Card>
 
-            <Button
+            <ModernButton
                 title="Create Rubric"
                 onPress={onSubmit}
                 variant="primary"
@@ -334,9 +357,9 @@ const styles = StyleSheet.create({
         marginBottom: spacing.md,
     },
     qpRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+        flexDirection: 'column',
+        alignItems: 'stretch',
+        justifyContent: 'flex-start',
         paddingVertical: spacing.sm,
         borderBottomWidth: StyleSheet.hairlineWidth,
         borderBottomColor: colors.divider,
@@ -344,12 +367,17 @@ const styles = StyleSheet.create({
     qpLabel: {
         ...typography.body,
         color: colors.textPrimary,
-        flex: 1,
         fontWeight: '600',
+        marginBottom: spacing.xs,
+    },
+    qpControls: {
+        flexDirection: 'column',
+        alignItems: 'stretch',
     },
     qpInputs: {
         flexDirection: 'row',
         alignItems: 'center',
+        marginBottom: spacing.sm,
     },
     qpInputGroup: {
         alignItems: 'center',
@@ -382,7 +410,6 @@ const styles = StyleSheet.create({
         marginBottom: spacing.xl,
     },
     difficultyContainer: {
-        marginTop: spacing.xs,
-        paddingHorizontal: spacing.sm,
+        width: '100%',
     },
 });

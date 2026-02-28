@@ -16,7 +16,12 @@ generation_status = {}
 class GenerationManager:
     def __init__(self):
         # Restriction for 8GB RAM: Only one generation process at a time
-        self._concurrency_lock = asyncio.Semaphore(1)
+        self._lock = None
+
+    def _get_lock(self):
+        if self._lock is None:
+            self._lock = asyncio.Semaphore(1)
+        return self._lock
 
     async def start_quick_generation(self, params: schemas.QuickGenerateRequest, db: Session) -> str:
         """
@@ -66,7 +71,8 @@ class GenerationManager:
         }
 
     async def _generate_batches_sequentially(self, batch_id: str, params: schemas.GenerateQuestionRequest, db: Session, is_reference: bool):
-        async with self._concurrency_lock:
+        lock = self._get_lock()
+        async with lock:
              await self._generate_batch(batch_id, params, db, is_reference)
 
     async def _generate_batch(self, batch_id: str, params: schemas.GenerateQuestionRequest, db: Session, is_reference: bool):
@@ -104,7 +110,8 @@ class GenerationManager:
             session.close()
 
     async def _generate_rubric_sequentially(self, batch_id: str, rubric: database.Rubric, db: Session):
-        async with self._concurrency_lock:
+        lock = self._get_lock()
+        async with lock:
             await self._generate_rubric_batch(batch_id, rubric, db)
 
     async def _generate_rubric_batch(self, batch_id: str, rubric: database.Rubric, db: Session):
@@ -148,6 +155,7 @@ class GenerationManager:
                             "question_type": self._normalize_question_type(q_type),
                             "count": config["count"],
                             "marks_each": config.get("marks_each", 1),
+                            "difficulty": config.get("difficulty", "medium") or "medium",
                         })
             elif isinstance(sections, list):
                 for s in sections:
@@ -156,6 +164,7 @@ class GenerationManager:
                             "question_type": self._normalize_question_type(s.get("type", "mcq")),
                             "count": s["count"],
                             "marks_each": s.get("marks_each", s.get("marksEach", 1)),
+                            "difficulty": s.get("difficulty", "medium") or "medium",
                         })
             
             if not gen_tasks:
@@ -191,21 +200,10 @@ class GenerationManager:
             session.add(batch)
             session.commit()
             
-            # 4) Pre-retrieve RAG context from ALL topics combined
+            # 4) Per-topic RAG retrieval: each question type gets
+            #    context from its target topic (instead of one combined query)
             from ..services.rag_service import RAGService
             rag_service = RAGService()
-            
-            # Build a combined query from all topic names for better retrieval
-            all_topic_names = [t.name for t in topics]
-            combined_query = "; ".join(all_topic_names)
-            
-            # Retrieve WITHOUT topic_id filter to get chunks from ALL topics
-            all_topics_context = rag_service.retrieve_context(
-                query_text=combined_query,
-                subject_id=str(rubric.subject_id),
-                n_results=15,  # More results since covering all topics
-                topic_id=None   # NO filter — get chunks from ALL topics
-            )
             
             # 5) Generate questions for each section type
             generated_ids = []
@@ -221,6 +219,13 @@ class GenerationManager:
                 target_topic_id = topic_ids[topic_index % len(topic_ids)] if topic_ids else None
                 topic_index += 1
                 
+                # Retrieve topic-specific context via MMR
+                target_topic = None
+                if target_topic_id:
+                    target_topic = next((t for t in topics if t.id == target_topic_id), None)
+                
+                topic_query = target_topic.name if target_topic else rubric.title
+                
                 try:
                     result = await topic_actions_service.quick_generate_questions(
                         db=session,
@@ -229,8 +234,13 @@ class GenerationManager:
                         question_type=q_type,
                         count=count,
                         difficulty=task.get("difficulty", "medium"),
-                        pre_retrieved_context=all_topics_context  # Pass pre-retrieved context
+                        pre_retrieved_context=None  # Force per-question RAG retrieval for diverse contexts
                     )
+                    
+                    # Safety: ensure result is a dict
+                    if not isinstance(result, dict):
+                        logger.warning(f"quick_generate_questions returned non-dict: {type(result)}")
+                        result = {"questions": []}
                     
                     questions = result.get("questions", [])
                     

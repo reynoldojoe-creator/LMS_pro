@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { colors, typography, spacing } from '../../../theme';
+import { colors } from '../../../theme/colors';
+import { typography } from '../../../theme/typography';
+import { spacing } from '../../../theme/spacing';
 import { Ionicons } from '@expo/vector-icons';
 import { useForm, FormProvider } from 'react-hook-form';
 import { FinalExamForm } from './forms/FinalExamForm';
-// import { MidtermForm } from './forms/MidtermForm';
+import { MidtermForm } from './forms/MidtermForm';
 import { QuizForm } from './forms/QuizForm';
-// import { AssignmentForm } from './forms/AssignmentForm';
+import { AssignmentForm } from './forms/AssignmentForm';
 import { useRubricStore } from '../../../store/rubricStore';
 import { subjectService } from '../../../services/subjectService';
 
@@ -78,11 +80,11 @@ export const RubricWizardScreen = ({ route, navigation }: Props) => {
             case 'final':
                 return <FinalExamForm subject={subject} onSubmit={methods.handleSubmit(onSubmit)} />;
             case 'midterm':
-                return <Text>Midterm Form (Coming Soon)</Text>; // <MidtermForm subject={subject} onSubmit={methods.handleSubmit(onSubmit)} />;
+                return <MidtermForm subject={subject} onSubmit={methods.handleSubmit(onSubmit)} />;
             case 'quiz':
                 return <QuizForm subject={subject} onSubmit={methods.handleSubmit(onSubmit)} />;
             case 'assignment':
-                return <Text>Assignment Form (Coming Soon)</Text>; // <AssignmentForm subject={subject} onSubmit={methods.handleSubmit(onSubmit)} />;
+                return <AssignmentForm subject={subject} onSubmit={methods.handleSubmit(onSubmit)} />;
             default:
                 return <Text>Unknown Exam Type</Text>;
         }

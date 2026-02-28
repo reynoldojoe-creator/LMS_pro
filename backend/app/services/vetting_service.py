@@ -199,6 +199,15 @@ class VettingService:
         topics = db.query(database.Topic).filter(database.Topic.subject_id == batch.subject_id).all()
         topic_map = {t.id: t for t in topics}
 
+        # Get subject level COs/LOs for intensity mapping
+        subject_cos = db.query(database.CourseOutcome).filter(
+            database.CourseOutcome.subject_id == batch.subject_id
+        ).order_by(database.CourseOutcome.order).all()
+
+        subject_los = db.query(database.LearningOutcome).filter(
+            database.LearningOutcome.subject_id == batch.subject_id
+        ).order_by(database.LearningOutcome.order).all()
+
         formatted_questions = []
         sections = {
             "mcq": [],
@@ -264,6 +273,8 @@ class VettingService:
             "batch": batch,
             "sections": sections,
             "questions": formatted_questions,  
+            "subjectCOs": [{"id": co.id, "code": co.code, "description": co.description} for co in subject_cos],
+            "subjectLOs": [{"id": lo.id, "code": lo.code, "description": lo.description} for lo in subject_los],
             "progress": {
                 "total": batch.total_questions if batch else len(questions),
                 "approved": batch.approved_count if batch else sum(1 for q in questions if q.status == 'approved'),
@@ -313,6 +324,12 @@ class VettingService:
         if question.batch_id:
              self._update_batch_counts(db, question.batch_id, old_status, "approved")
         
+        # Persist CO/LO intensity mappings back to question
+        if co_adjustment:
+            question.co_id = json.dumps(co_adjustment)
+        if lo_adjustment:
+            question.lo_id = json.dumps(lo_adjustment)
+            
         db.commit()
         db.refresh(question)
         return question
@@ -355,6 +372,52 @@ class VettingService:
             topic_id=question.topic_id,
             question_type=question.question_type,
             rejection_category=rejection_category,
+            timestamp=datetime.utcnow()
+        )
+        db.add(feedback)
+        
+        db.commit()
+        db.refresh(question)
+        return question
+
+    async def quarantine_question(
+        self,
+        db: Session,
+        question_id: str,
+        vetter_id: str,
+        quarantine_category: str,
+        quarantine_reason: Optional[str] = None,
+        notes: Optional[str] = None
+    ) -> Any:
+        from ..models import database
+
+        try:
+             q_id_int = int(question_id)
+        except ValueError:
+             raise ValueError("Invalid question ID")
+
+        question = db.query(database.Question).filter(
+            database.Question.id == q_id_int
+        ).first()
+        
+        if not question:
+            raise ValueError("Question not found")
+            
+        old_status = question.status
+        question.status = "quarantined"
+        question.rejection_reason = quarantine_reason
+        
+        # Update batch counts
+        if question.batch_id:
+             self._update_batch_counts(db, question.batch_id, old_status, "quarantined")
+        
+        # Log feedback
+        feedback = vetting_models.VettingFeedback(
+            id=f"fb_{datetime.utcnow().timestamp()}",
+            subject_id=question.subject_id,
+            topic_id=question.topic_id,
+            question_type=question.question_type,
+            rejection_category=quarantine_category,
             timestamp=datetime.utcnow()
         )
         db.add(feedback)

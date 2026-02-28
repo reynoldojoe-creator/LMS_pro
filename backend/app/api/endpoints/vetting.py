@@ -141,6 +141,26 @@ async def reject_question(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/{question_id}/quarantine")
+async def quarantine_question(
+    question_id: str,
+    body: Dict = {},
+    db: Session = Depends(get_db)
+):
+    """Quarantine question with optional notes"""
+    try:
+        vetter_id = body.get("vetter_id", "vetter")
+        category = body.get("category", "quarantined")
+        reason = body.get("reason") or body.get("notes", "")
+        notes = body.get("notes", "")
+        return await vetting_service.quarantine_question(
+            db, question_id, vetter_id, category, reason, notes
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/rejection-categories")
 async def get_rejection_categories():
     """Get list of rejection categories for UI dropdown"""

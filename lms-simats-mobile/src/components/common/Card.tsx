@@ -1,81 +1,78 @@
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { typography, spacing} from '../../theme';
-import { useAppTheme } from '../../hooks';
+import { View, StyleSheet, ViewStyle, Text, TouchableOpacity } from 'react-native';
+import { colors } from '../../theme/colors';
+import { borderRadius, spacing } from '../../theme/spacing';
+import { typography } from '../../theme/typography';
 
 interface CardProps {
     children: React.ReactNode;
-    title?: string;
-    action?: React.ReactNode;
-    grouped?: boolean;
     style?: ViewStyle;
+    contentStyle?: ViewStyle;
+    title?: string;
+    footer?: React.ReactNode;
+    onPress?: () => void;
 }
 
 export const Card: React.FC<CardProps> = ({
     children,
-    title,
-    action,
-    grouped = false,
     style,
+    contentStyle,
+    title,
+    footer,
+    onPress
 }) => {
-    const { colors } = useAppTheme();
-    const styles = getStyles(colors);
+    const Container = (onPress ? TouchableOpacity : View) as any;
 
     return (
-        <View style={[styles.card, grouped && styles.grouped, style]}>
+        <Container style={[styles.container, style]} onPress={onPress} activeOpacity={0.7}>
             {title && (
                 <View style={styles.header}>
                     <Text style={styles.title}>{title}</Text>
-                    {action && <View style={styles.action}>{action}</View>}
                 </View>
             )}
-            <View style={title ? styles.body : styles.bodyNoTitle}>{children}</View>
-        </View>
+            <View style={[styles.content, contentStyle]}>
+                {children}
+            </View>
+            {footer && (
+                <View style={styles.footer}>
+                    {footer}
+                </View>
+            )}
+        </Container>
     );
 };
 
-const getStyles = (colors: any) => StyleSheet.create({
-    card: {
+const styles = StyleSheet.create({
+    container: {
         backgroundColor: colors.card,
-        borderRadius: 16,
+        borderRadius: borderRadius.lg,
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 3,
+        marginVertical: spacing.sm,
+        marginHorizontal: spacing.sm,
         borderWidth: 1,
-        borderColor: colors.border,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    grouped: {
-        borderRadius: 20,
-        marginHorizontal: spacing.screenHorizontal,
-        shadowOpacity: 0.05,
+        borderColor: 'rgba(0,0,0,0.03)',
+        overflow: 'hidden',
     },
     header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: spacing.cardPadding,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.divider,
-        backgroundColor: 'rgba(0,0,0,0.02)', // Subtle header tint
-        borderTopLeftRadius: 16, // Match card radius
-        borderTopRightRadius: 16,
+        paddingHorizontal: spacing.cardPadding,
+        paddingTop: spacing.cardPadding,
+        paddingBottom: spacing.sm,
     },
     title: {
-        ...typography.h3,
-        color: colors.textPrimary,
-        textShadowColor: 'rgba(255,255,255,0.5)',
-        textShadowOffset: { width: 0, height: 1 },
+        ...typography.headline,
+        color: colors.text,
     },
-    action: {
-        marginLeft: spacing.sm,
-    },
-    body: {
+    content: {
         padding: spacing.cardPadding,
     },
-    bodyNoTitle: {
+    footer: {
+        backgroundColor: colors.systemGray6,
         padding: spacing.cardPadding,
-        borderRadius: 16,
+        borderTopWidth: 1,
+        borderTopColor: colors.separator,
     },
 });

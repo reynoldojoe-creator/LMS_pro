@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Modal, ActivityIndicator } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as DocumentPicker from 'expo-document-picker';
-import { colors, typography, spacing } from '../../theme';
-import { LoadingSpinner } from '../../components/common';
-import { LinenBackground, GlossyNavBar, GlossyCard, GlossyButton } from '../../components/ios6';
+import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
+import { LoadingSpinner, ScreenBackground, ModernNavBar, Card, ModernButton } from '../../components/common';
 import { SampleQuestionsUploadModal } from '../../components/SampleQuestionsUploadModal';
 import { TrainModelModal } from '../../components/TrainModelModal';
 import { useFacultyStore } from '../../store';
@@ -14,7 +15,7 @@ type Props = NativeStackScreenProps<any, 'TopicDetail'>;
 
 export const TopicDetailScreen = ({ route, navigation }: Props) => {
     const { subjectId, topicId } = route.params as { subjectId: string; topicId: string };
-    const { getSubjectById, uploadTopicNotes } = useFacultyStore();
+    const { getSubjectById, uploadTopicNotes, isUploading } = useFacultyStore();
     const subject = getSubjectById(subjectId);
     const topic = (subject?.topics || []).find(t => t.id === topicId) ||
         subject?.units.flatMap(u => u.topics || []).find(t => t.id === topicId);
@@ -24,8 +25,9 @@ export const TopicDetailScreen = ({ route, navigation }: Props) => {
     const [isTrainModalVisible, setIsTrainModalVisible] = useState(false);
     const [fileListKey, setFileListKey] = useState(0);
     const [isEditing, setIsEditing] = useState(false);
-    const [selectedCos, setSelectedCos] = useState<string[]>([]);
+    const [selectedCos, setSelectedCos] = useState<{ co_id: number; weight: string }[]>([]);
     const [selectedLos, setSelectedLos] = useState<string[]>([]);
+    const [showAllQuestions, setShowAllQuestions] = useState(false);
 
     React.useEffect(() => {
         if (subjectId && topicId) {
@@ -35,19 +37,19 @@ export const TopicDetailScreen = ({ route, navigation }: Props) => {
 
     React.useEffect(() => {
         if (topic) {
-            setSelectedCos(topic.mappedCOs?.map(co => co.id) || []);
+            setSelectedCos(topic.mappedCOs?.map((co: any) => ({ co_id: parseInt(co.id) || co.id, weight: co.weight || 'Moderate' })) || []);
             setSelectedLos(topic.learningOutcomes?.map(lo => lo.id) || []);
         }
     }, [topic]);
 
     if (!subject || !topic) {
         return (
-            <LinenBackground>
-                <GlossyNavBar title="Topic Details" showBack onBack={() => navigation.goBack()} />
+            <ScreenBackground>
+                <ModernNavBar title="Topic Details" showBack onBack={() => navigation.goBack()} />
                 <View style={styles.center}>
                     <Text>Topic not found</Text>
                 </View>
-            </LinenBackground>
+            </ScreenBackground>
         );
     }
 
@@ -91,9 +93,31 @@ export const TopicDetailScreen = ({ route, navigation }: Props) => {
         else setList([...list, id]);
     };
 
+    const setCOWeight = (id: number, weight: string) => {
+        if (weight === 'None') {
+            setSelectedCos(selectedCos.filter(c => c.co_id !== id));
+        } else {
+            const existing = selectedCos.find(c => c.co_id === id);
+            if (existing) {
+                setSelectedCos(selectedCos.map(c => c.co_id === id ? { ...c, weight } : c));
+            } else {
+                setSelectedCos([...selectedCos, { co_id: id, weight }]);
+            }
+        }
+    };
+
+    const getWeightColor = (weight: string) => {
+        switch (weight) {
+            case 'High': return '#E53935'; // Red
+            case 'Moderate': return '#F5A623'; // Orange
+            case 'Low': return '#4A90E2'; // Blue
+            default: return colors.textSecondary;
+        }
+    };
+
     return (
-        <LinenBackground>
-            <GlossyNavBar
+        <ScreenBackground>
+            <ModernNavBar
                 title="Topic Details"
                 showBack
                 onBack={() => navigation.goBack()}
@@ -105,12 +129,12 @@ export const TopicDetailScreen = ({ route, navigation }: Props) => {
             />
 
             <ScrollView contentContainerStyle={styles.content}>
-                <GlossyCard title="Overview">
+                <Card title="Overview" style={styles.card}>
                     <Text style={styles.topicName}>{topic.name}</Text>
                     <View style={styles.metaRow}>
                         <Text style={styles.metaText}>{topic.questionCount || 0} Qs • {topic.mappedCOs?.length || 0} COs • {topic.learningOutcomes?.length || 0} LOs</Text>
                     </View>
-                </GlossyCard>
+                </Card>
 
                 {/* Actions Grid */}
                 {!isEditing && (
@@ -139,50 +163,87 @@ export const TopicDetailScreen = ({ route, navigation }: Props) => {
 
                 {/* Generated Questions Section */}
                 {!isEditing && (topic.questions && topic.questions.length > 0) && (
-                    <GlossyCard title={`Generated Questions (${topic.questions.length})`}>
-                        {topic.questions.slice(0, 5).map((q: any, index: number) => (
-                            <View key={index} style={styles.questionItem}>
-                                <Text style={styles.questionText} numberOfLines={2}>{q.questionText}</Text>
+                    <Card title={`Generated Questions (${topic.questions.length})`} style={styles.card}>
+                        {(showAllQuestions ? topic.questions : topic.questions.slice(0, 5)).map((q: any, index: number) => (
+                            <TouchableOpacity
+                                key={index}
+                                style={styles.questionItem}
+                                onPress={() => navigation.navigate('QuestionPreview', {
+                                    question: q,
+                                    subjectId: subjectId,
+                                    topicId: topicId,
+                                    questionId: q.id
+                                })}
+                            >
+                                <Text style={styles.questionText} numberOfLines={4}>{q.questionText}</Text>
                                 <View style={styles.questionMeta}>
                                     <Text style={styles.metaTag}>{q.questionType?.toUpperCase()}</Text>
                                     <Text style={styles.metaTag}>{q.marks} Marks</Text>
                                 </View>
-                            </View>
+                            </TouchableOpacity>
                         ))}
-                        {topic.questions.length > 5 && <Text style={styles.moreText}>+{topic.questions.length - 5} more questions...</Text>}
-                    </GlossyCard>
+                        {topic.questions.length > 5 && (
+                            <TouchableOpacity onPress={() => setShowAllQuestions(!showAllQuestions)}>
+                                <Text style={styles.moreText}>
+                                    {showAllQuestions ? 'Show less' : `+${topic.questions.length - 5} more questions...`}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+                    </Card>
                 )}
 
                 {/* Outcomes Section */}
-                <GlossyCard title="Course Outcomes">
+                <Card title="Course Outcomes" style={styles.card}>
                     {isEditing ? (
-                        subject.courseOutcomes?.map(co => {
-                            const isSelected = selectedCos.includes(co.id);
+                        subject.courseOutcomes?.map((co: any) => {
+                            const selectedWeight = selectedCos.find(c => c.co_id === co.id)?.weight || 'None';
                             return (
-                                <TouchableOpacity key={co.id} style={styles.listItem} onPress={() => toggleSelection(co.id, selectedCos, setSelectedCos)}>
-                                    <Ionicons name={isSelected ? "checkbox" : "square-outline"} size={24} color={colors.primary} />
+                                <View key={co.id} style={styles.coMappingContainer}>
                                     <View style={styles.listItemContent}>
                                         <Text style={styles.outcomeCode}>{co.code}</Text>
                                         <Text style={styles.outcomeDesc}>{co.description}</Text>
                                     </View>
-                                </TouchableOpacity>
+                                    <View style={styles.weightSelector}>
+                                        {['None', 'Low', 'Moderate', 'High'].map(weight => (
+                                            <TouchableOpacity
+                                                key={weight}
+                                                style={[
+                                                    styles.weightOption,
+                                                    selectedWeight === weight && styles.weightSelected
+                                                ]}
+                                                onPress={() => setCOWeight(co.id, weight)}
+                                            >
+                                                <Text style={{
+                                                    fontSize: 12,
+                                                    color: selectedWeight === weight ? 'white' : colors.textSecondary,
+                                                    fontWeight: selectedWeight === weight ? 'bold' : 'normal'
+                                                }}>{weight}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                </View>
                             );
                         })
                     ) : (
-                        topic.mappedCOs?.map(co => (
+                        topic.mappedCOs?.map((co: any) => (
                             <View key={co.id} style={styles.listItem}>
-                                <View style={styles.bullet} />
+                                <View style={[styles.bullet, { backgroundColor: getWeightColor(co.weight) }]} />
                                 <View style={styles.listItemContent}>
-                                    <Text style={styles.outcomeCode}>{co.code}</Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                        <Text style={styles.outcomeCode}>{co.code}</Text>
+                                        <View style={{ backgroundColor: getWeightColor(co.weight) + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                                            <Text style={{ fontSize: 10, color: getWeightColor(co.weight), fontWeight: 'bold' }}>{co.weight || 'Moderate'}</Text>
+                                        </View>
+                                    </View>
                                     <Text style={styles.outcomeDesc}>{co.description}</Text>
                                 </View>
                             </View>
                         ))
                     )}
                     {!isEditing && (!topic.mappedCOs || topic.mappedCOs.length === 0) && <Text style={styles.emptyText}>No mapped COs</Text>}
-                </GlossyCard>
+                </Card>
 
-                <GlossyCard title="Learning Outcomes">
+                <Card title="Learning Outcomes" style={styles.card}>
                     {isEditing ? (
                         (subject.learningOutcomes || []).map(lo => {
                             const isSelected = selectedLos.includes(lo.id);
@@ -208,12 +269,12 @@ export const TopicDetailScreen = ({ route, navigation }: Props) => {
                         ))
                     )}
                     {!isEditing && (!topic.learningOutcomes || topic.learningOutcomes.length === 0) && <Text style={styles.emptyText}>No mapped LOs</Text>}
-                </GlossyCard>
+                </Card>
 
                 {/* Uploaded Files */}
-                <GlossyCard title="Uploaded Materials">
+                <Card title="Uploaded Materials" style={styles.card}>
                     <FileList topicId={topicId} subjectId={subjectId} key={fileListKey} />
-                </GlossyCard>
+                </Card>
 
                 <View style={{ height: 40 }} />
             </ScrollView>
@@ -222,7 +283,11 @@ export const TopicDetailScreen = ({ route, navigation }: Props) => {
                 visible={isUploadModalVisible}
                 onClose={() => {
                     setIsUploadModalVisible(false);
-                    setTimeout(() => setFileListKey(k => k + 1), 3000);
+                    // Refresh immediately
+                    setFileListKey(k => k + 1);
+                    // Background processing takes time — poll again after 5s and 10s
+                    setTimeout(() => setFileListKey(k => k + 1), 5000);
+                    setTimeout(() => setFileListKey(k => k + 1), 10000);
                 }}
                 subjectId={subjectId}
                 topicId={topicId}
@@ -237,35 +302,81 @@ export const TopicDetailScreen = ({ route, navigation }: Props) => {
                 topicName={topic.name}
                 onSuccess={() => useFacultyStore.getState().fetchTopicDetail(subjectId, topicId)}
             />
-        </LinenBackground>
+
+            {/* Uploading Overlay Modal */}
+            <Modal transparent visible={isUploading} animationType="fade">
+                <View style={[styles.center, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
+                    <View style={{ backgroundColor: colors.surface, padding: 30, borderRadius: 16, alignItems: 'center' }}>
+                        <ActivityIndicator size="large" color={colors.primary} style={{ marginBottom: 15 }} />
+                        <Text style={{ ...typography.body, color: colors.textPrimary, fontWeight: '600' }}>
+                            Uploading & Processing...
+                        </Text>
+                        <Text style={{ ...typography.caption, color: colors.textSecondary, marginTop: 5, textAlign: 'center' }}>
+                            Please wait while we index the file for RAG.
+                        </Text>
+                    </View>
+                </View>
+            </Modal>
+        </ScreenBackground>
     );
 };
 
 const styles = StyleSheet.create({
+    coMappingContainer: {
+        padding: spacing.md,
+        borderWidth: 1,
+        borderColor: colors.separator,
+        borderRadius: 8,
+        marginBottom: spacing.xs,
+        backgroundColor: colors.surface,
+    },
+    coDescription: {
+        ...typography.body,
+        color: colors.textPrimary,
+        marginBottom: spacing.sm,
+    },
+    weightSelector: {
+        flexDirection: 'row',
+        backgroundColor: colors.background,
+        borderRadius: 8,
+        padding: 4,
+        justifyContent: 'space-between',
+    },
+    weightOption: {
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 6,
+        alignItems: 'center',
+        flex: 1,
+    },
+    weightSelected: {
+        backgroundColor: colors.primary,
+    },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     content: { paddingBottom: spacing.xl },
-    navText: { color: 'white', fontWeight: 'bold', fontSize: 16, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: -1 }, textShadowRadius: 0 },
-    topicName: { fontSize: 22, fontWeight: 'bold', color: '#333', textAlign: 'center', marginBottom: 5 },
+    navText: { color: colors.primary, fontWeight: '600', fontSize: 17 },
+    topicName: { ...typography.h3, color: colors.textPrimary, textAlign: 'center', marginBottom: 5 },
     metaRow: { flexDirection: 'row', justifyContent: 'center', alignSelf: 'center', marginBottom: 10 },
-    metaText: { color: '#666', fontSize: 13 },
+    metaText: { color: colors.textSecondary, fontSize: 13 },
     actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: 10, justifyContent: 'space-between' },
-    actionCard: { width: '48%', backgroundColor: 'rgba(255,255,255,0.9)', padding: 15, borderRadius: 10, alignItems: 'center', marginBottom: 10, shadowColor: 'black', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.5)' },
-    actionTitle: { marginTop: 8, fontWeight: 'bold', color: '#333', fontSize: 13 },
-    listItem: { flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#EEE', alignItems: 'center' },
+    actionCard: { width: '48%', backgroundColor: colors.surface, padding: 15, borderRadius: 16, alignItems: 'center', marginBottom: 10, shadowColor: 'black', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 5, borderWidth: 1, borderColor: colors.border },
+    actionTitle: { marginTop: 8, fontWeight: '600', color: colors.textPrimary, fontSize: 13 },
+    listItem: { flexDirection: 'row', paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.divider, alignItems: 'center' },
     listItemContent: { flex: 1, marginLeft: 10 },
-    bullet: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#666', marginTop: 6 },
-    outcomeCode: { fontWeight: 'bold', fontSize: 12, color: '#444' },
-    outcomeDesc: { fontSize: 13, color: '#666' },
-    emptyText: { fontStyle: 'italic', color: '#999', textAlign: 'center', marginTop: 10 },
-    questionItem: { paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#EEE' },
-    questionText: { fontSize: 14, color: '#333', marginBottom: 4 },
+    bullet: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.textSecondary, marginTop: 6 },
+    outcomeCode: { fontWeight: '600', fontSize: 12, color: colors.textPrimary },
+    outcomeDesc: { fontSize: 13, color: colors.textSecondary },
+    emptyText: { fontStyle: 'italic', color: colors.textSecondary, textAlign: 'center', marginTop: 10 },
+    questionItem: { paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.divider },
+    questionText: { fontSize: 14, color: colors.textPrimary, marginBottom: 4 },
     questionMeta: { flexDirection: 'row', gap: 5 },
-    metaTag: { fontSize: 10, color: '#666', backgroundColor: '#EEE', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+    metaTag: { fontSize: 10, color: colors.textSecondary, backgroundColor: colors.systemGray6, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
     moreText: { textAlign: 'center', color: colors.primary, marginTop: 10, fontSize: 12 },
-    fileListItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#EEE' },
-    fileIcon: { width: 30, height: 30, borderRadius: 5, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
-    fileName: { fontSize: 14, color: '#333', fontWeight: 'bold' },
-    fileMeta: { fontSize: 11, color: '#888' },
+    fileListItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.divider },
+    fileIcon: { width: 30, height: 30, borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
+    fileName: { fontSize: 14, color: colors.textPrimary, fontWeight: '600' },
+    fileMeta: { fontSize: 11, color: colors.textSecondary },
+    card: { marginBottom: spacing.md },
 });
 
 const FileList = ({ subjectId, topicId }: { subjectId: string, topicId: string }) => {
@@ -279,8 +390,26 @@ const FileList = ({ subjectId, topicId }: { subjectId: string, topicId: string }
     const loadFiles = async () => {
         setLoading(true);
         try {
-            const data = await useFacultyStore.getState().fetchTopicFiles(subjectId, topicId);
-            setFiles(data || []);
+            // Fetch both general files and individual sample files in parallel
+            const [generalFiles, sampleFiles] = await Promise.all([
+                useFacultyStore.getState().fetchTopicFiles(subjectId, topicId),
+                useFacultyStore.getState().fetchTopicSampleFiles(subjectId, topicId),
+            ]);
+
+            // Filter out the aggregated "samples" entry from general files
+            const nonSampleFiles = (generalFiles || []).filter((f: any) => f.type !== 'samples');
+
+            // Convert individual sample files into the same format as other files
+            const individualSampleFiles = (sampleFiles || []).map((sf: any) => ({
+                name: sf.name || 'Sample Questions',
+                type: 'samples',
+                size: 0,
+                uploaded_at: sf.uploaded_at || new Date().toISOString(),
+                details: `${sf.count} questions indexed`,
+                sampleFileId: sf.id, // Keep the ID for training selection
+            }));
+
+            setFiles([...nonSampleFiles, ...individualSampleFiles]);
         } catch (e) {
             console.warn("Failed to load topic files", e);
             setFiles([]);
@@ -309,6 +438,31 @@ const FileList = ({ subjectId, topicId }: { subjectId: string, topicId: string }
         }
     };
 
+    const handleDelete = (file: any) => {
+        Alert.alert(
+            "Delete File",
+            `Are you sure you want to delete ${decodeURIComponent(file.name)}?`,
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Delete", style: "destructive", onPress: async () => {
+                        try {
+                            const fileNameToPass = file.type === 'samples' ? (file.sampleFileId || file.name) : file.name;
+                            await useFacultyStore.getState().deleteTopicFile(subjectId, topicId, file.type, fileNameToPass);
+                            loadFiles(); // Refresh list
+                        } catch (error) {
+                            Alert.alert("Error", "Failed to delete file.");
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleView = (file: any) => {
+        Alert.alert("View File", `Viewing for ${file.type} files is coming soon.`);
+    };
+
     return (
         <View>
             {files.map((file, index) => (
@@ -316,11 +470,19 @@ const FileList = ({ subjectId, topicId }: { subjectId: string, topicId: string }
                     <View style={[styles.fileIcon, { backgroundColor: getColor(file.type) }]}>
                         <Text style={{ fontSize: 16 }}>{getIcon(file.type)}</Text>
                     </View>
-                    <View style={{ flex: 1 }}>
+                    <View style={{ flex: 1, marginRight: 10 }}>
                         <Text style={styles.fileName} numberOfLines={1}>{decodeURIComponent(file.name)}</Text>
                         <Text style={styles.fileMeta}>
                             {file.details || `${file.type.toUpperCase()} • ${new Date(file.uploaded_at).toLocaleDateString()}`}
                         </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: 15 }}>
+                        <TouchableOpacity onPress={() => handleView(file)}>
+                            <Ionicons name="eye-outline" size={20} color={colors.primary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleDelete(file)}>
+                            <Ionicons name="trash-outline" size={20} color={colors.error} />
+                        </TouchableOpacity>
                     </View>
                 </View>
             ))}

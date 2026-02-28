@@ -10,9 +10,14 @@ from ...api.deps import get_db
 
 router = APIRouter()
 
+class TopicWeightMapping(BaseModel):
+    topic_id: int
+    weight: str = "Moderate"
+
 class BulkMapRequest(BaseModel):
-    topic_ids: List[int]
-    weight: str = "moderate"
+    topic_ids: List[int] = []              # Legacy flat list
+    weight: str = "moderate"               # Legacy single weight
+    topic_mappings: List[TopicWeightMapping] = []  # New: per-topic weights
 
 @router.get("/subjects/{subject_id}/cos/{co_id}/suggest-topics")
 async def suggest_topics(
@@ -31,9 +36,15 @@ def bulk_map_topics(
     data: BulkMapRequest,
     db: Session = Depends(get_db)
 ):
-    """Map multiple topics to a CO."""
-    outcome_mapping_service.bulk_map(db, co_id, data.topic_ids, data.weight)
-    return {"status": "success", "mapped_count": len(data.topic_ids)}
+    """Map multiple topics to a CO with per-topic weights."""
+    if data.topic_mappings:
+        # New path: per-topic weights
+        outcome_mapping_service.bulk_map_with_weights(db, co_id, data.topic_mappings)
+        return {"status": "success", "mapped_count": len(data.topic_mappings)}
+    else:
+        # Legacy path: flat list with single weight
+        outcome_mapping_service.bulk_map(db, co_id, data.topic_ids, data.weight)
+        return {"status": "success", "mapped_count": len(data.topic_ids)}
 
 @router.delete("/subjects/{subject_id}/cos/{co_id}/topics/{topic_id}")
 def remove_mapping(

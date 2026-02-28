@@ -1,6 +1,8 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
-import { colors, typography, spacing} from '../../theme';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, LayoutAnimation, Platform } from 'react-native';
+import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { spacing, borderRadius } from '../../theme/spacing';
 
 interface SegmentedControlProps {
     segments: string[];
@@ -13,8 +15,9 @@ export const SegmentedControl: React.FC<SegmentedControlProps> = ({
     segments,
     selectedIndex,
     onChange,
-    tintColor,
+    tintColor = colors.background, // Default to background (white) for the selected thumb
 }) => {
+
     return (
         <View style={styles.container}>
             {segments.map((segment, index) => {
@@ -25,20 +28,18 @@ export const SegmentedControl: React.FC<SegmentedControlProps> = ({
                         key={index}
                         style={[
                             styles.segment,
-                            isSelected && [styles.segmentSelected, tintColor ? { backgroundColor: tintColor } : {}],
-                            index === 0 && styles.segmentFirst,
-                            index === segments.length - 1 && styles.segmentLast,
+                            isSelected && styles.selectedSegment
                         ]}
-                        onPress={() => onChange(index)}
+                        onPress={() => {
+                            // LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                            onChange(index);
+                        }}
                         activeOpacity={0.7}
                     >
-                        <Text
-                            style={[
-                                styles.text,
-                                isSelected && styles.textSelected,
-                                isSelected && tintColor ? { color: '#fff' } : {},
-                            ]}
-                        >
+                        <Text style={[
+                            styles.text,
+                            isSelected && styles.selectedText
+                        ]}>
                             {segment}
                         </Text>
                     </TouchableOpacity>
@@ -51,41 +52,32 @@ export const SegmentedControl: React.FC<SegmentedControlProps> = ({
 const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
-        backgroundColor: colors.iosGray6,
-        borderRadius: 12,
-        padding: 2,
+        backgroundColor: colors.systemGray5, // Darker background for better visibility
+        borderRadius: borderRadius.md,
+        padding: 4, // Increased padding
+        height: 40, // Increased height
     },
     segment: {
         flex: 1,
-        paddingVertical: spacing.sm,
-        paddingHorizontal: spacing.md,
         justifyContent: 'center',
         alignItems: 'center',
+        borderRadius: borderRadius.sm,
     },
-    segmentFirst: {
-        borderTopLeftRadius: 10,
-        borderBottomLeftRadius: 10,
-    },
-    segmentLast: {
-        borderTopRightRadius: 10,
-        borderBottomRightRadius: 10,
-    },
-    segmentSelected: {
-        backgroundColor: colors.surface,
-        shadowColor: '#000',
+    selectedSegment: {
+        backgroundColor: colors.background, // White thumb
+        shadowColor: 'black',
         shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
+        shadowOpacity: 0.15,
         shadowRadius: 2,
-        elevation: 1,
+        elevation: 2,
     },
     text: {
-        ...typography.body,
-        fontSize: 15,
-        color: colors.textPrimary,
+        ...typography.caption1,
+        fontWeight: '500',
+        color: colors.text,
     },
-    textSelected: {
-        ...typography.bodyBold,
-        fontSize: 15,
-        color: colors.textPrimary,
-    },
+    selectedText: {
+        fontWeight: '600',
+        color: colors.text,
+    }
 });

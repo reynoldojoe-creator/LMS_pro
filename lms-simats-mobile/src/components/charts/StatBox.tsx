@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, typography, spacing} from '../../theme';
+import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
 
 interface Props {
     value: string | number;
@@ -12,11 +14,9 @@ export const StatBox = ({ value, label, color = colors.primary }: Props) => {
     return (
         <View style={styles.container}>
             <Text
-                style={[styles.value, { color }]}
-                adjustsFontSizeToFit
-                numberOfLines={1}
+                style={[styles.value, { color, minHeight: 40, minWidth: 20, textAlign: 'center', fontSize: 32, fontWeight: '700' }]}
             >
-                {value}
+                {String(value)}
             </Text>
             <Text style={styles.label}>{label}</Text>
         </View>

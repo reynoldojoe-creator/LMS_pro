@@ -6,57 +6,82 @@ import {
     StyleSheet,
     TouchableOpacity,
     TextInputProps as RNTextInputProps,
+    Platform,
 } from 'react-native';
-import { typography, spacing } from '../../theme';
-import { useAppTheme } from '../../hooks';
+import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { spacing, borderRadius } from '../../theme/spacing';
+import { Ionicons } from '@expo/vector-icons';
 
 interface InputProps extends RNTextInputProps {
     label?: string;
     error?: string;
-    variant?: 'default' | 'search' | 'multiline';
+    variant?: 'default' | 'filled' | 'outline';
     showClearButton?: boolean;
     onClear?: () => void;
+    leftIcon?: keyof typeof Ionicons.glyphMap;
+    rightIcon?: keyof typeof Ionicons.glyphMap; // Or custom node if needed, but keeping simple for now
+    onRightIconPress?: () => void;
 }
 
 export const Input: React.FC<InputProps> = ({
     label,
     error,
-    variant = 'default',
+    variant = 'filled', // Modern iOS default is often filled (gray background)
     showClearButton = false,
     onClear,
     value,
+    leftIcon,
+    rightIcon,
+    onRightIconPress,
+    style,
     ...props
 }) => {
     const [isFocused, setIsFocused] = useState(false);
-    const { colors } = useAppTheme();
-    const styles = getStyles(colors);
 
     return (
         <View style={styles.container}>
             {label && <Text style={styles.label}>{label}</Text>}
 
-            <View style={styles.inputWrapper}>
+            <View style={[
+                styles.inputContainer,
+                variant === 'filled' && styles.filledContainer,
+                variant === 'outline' && styles.outlineContainer,
+                isFocused && variant === 'outline' && styles.focusedOutline,
+                !!error && styles.errorContainer,
+            ]}>
+                {leftIcon && (
+                    <Ionicons
+                        name={leftIcon as any}
+                        size={20}
+                        color={colors.textSecondary}
+                        style={styles.leftIcon}
+                    />
+                )}
+
                 <RNTextInput
                     style={[
                         styles.input,
-                        variant === 'multiline' && styles.multiline,
-                        variant === 'search' && styles.search,
-                        isFocused && styles.focused,
-                        error && styles.inputError,
+                        (leftIcon ? { paddingLeft: 0 } : { paddingLeft: spacing.md }),
+                        style
                     ]}
                     placeholderTextColor={colors.textTertiary}
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
                     value={value}
-                    multiline={variant === 'multiline'}
+                    selectionColor={colors.blue}
                     {...props}
                 />
 
-                {showClearButton && value && (
-                    <TouchableOpacity style={styles.clearButton} onPress={onClear}>
-                        <Text style={styles.clearText}>✕</Text>
+                {showClearButton && value ? (
+                    <TouchableOpacity onPress={onClear} style={styles.rightAction}>
+                        <Ionicons name="close-circle" size={16} color={colors.textTertiary} />
                     </TouchableOpacity>
-                )}
+                ) : rightIcon ? (
+                    <TouchableOpacity onPress={onRightIconPress} disabled={!onRightIconPress} style={styles.rightAction}>
+                        <Ionicons name={rightIcon as any} size={20} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                ) : null}
             </View>
 
             {error && <Text style={styles.errorText}>{error}</Text>}
@@ -64,60 +89,61 @@ export const Input: React.FC<InputProps> = ({
     );
 };
 
-const getStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
     container: {
         marginBottom: spacing.md,
     },
     label: {
-        ...typography.captionBold,
-        color: colors.textSecondary,
-        marginBottom: spacing.xs,
-        textTransform: 'uppercase',
+        ...typography.caption1,
+        color: colors.text,
+        marginBottom: 6,
+        fontWeight: '500',
+        marginLeft: 4,
     },
-    inputWrapper: {
-        position: 'relative',
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        height: 48,
+        borderRadius: borderRadius.md,
+        overflow: 'hidden',
+    },
+    filledContainer: {
+        backgroundColor: colors.systemGray6,
+        borderWidth: 1,
+        borderColor: 'transparent',
+    },
+    outlineContainer: {
+        backgroundColor: colors.background,
+        borderWidth: 1,
+        borderColor: colors.systemGray4,
+    },
+    focusedOutline: {
+        borderColor: colors.blue,
+    },
+    errorContainer: {
+        borderColor: colors.red,
+        borderWidth: 1,
     },
     input: {
+        flex: 1,
+        height: '100%',
         ...typography.body,
-        height: 44,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
-        paddingVertical: spacing.sm,
-        paddingRight: spacing.xl,
-        color: colors.textPrimary,
+        color: colors.text,
+        paddingRight: spacing.md,
     },
-    multiline: {
-        height: 100,
-        textAlignVertical: 'top',
-        paddingTop: spacing.sm,
+    leftIcon: {
+        marginLeft: spacing.md,
+        marginRight: spacing.sm,
     },
-    search: {
-        backgroundColor: colors.iosGray6,
-        borderRadius: 10,
-        borderBottomWidth: 0,
+    rightAction: {
         paddingHorizontal: spacing.md,
-    },
-    focused: {
-        borderBottomColor: colors.primary,
-    },
-    inputError: {
-        borderBottomColor: colors.error,
-    },
-    clearButton: {
-        position: 'absolute',
-        right: spacing.sm,
-        top: 0,
-        height: 44,
+        height: '100%',
         justifyContent: 'center',
-        paddingHorizontal: spacing.sm,
-    },
-    clearText: {
-        color: colors.textTertiary,
-        fontSize: 18,
     },
     errorText: {
-        ...typography.caption,
-        color: colors.error,
-        marginTop: spacing.xs,
+        ...typography.caption1,
+        color: colors.red,
+        marginTop: 4,
+        marginLeft: 4,
     },
 });

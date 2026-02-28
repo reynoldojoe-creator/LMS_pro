@@ -3,9 +3,10 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'rea
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useRubricStore } from '../../store';
 import { useFacultyStore } from '../../store';
-import { LoadingSpinner } from '../../components/common';
-import { LinenBackground, GlossyNavBar, GlossyCard, GlossyButton } from '../../components/ios6';
-import { colors, spacing } from '../../theme';
+import { LoadingSpinner, ScreenBackground, ModernNavBar, ModernButton, Card, SegmentedControl } from '../../components/common';
+import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
 import { Ionicons } from '@expo/vector-icons';
 
 type Props = NativeStackScreenProps<any, 'RubricsList'>;
@@ -49,7 +50,7 @@ export const RubricsListScreen = ({ navigation }: Props) => {
     };
 
     const getSubjectName = (subjectId: string) => {
-        const subject = subjects.find(s => s.id === subjectId);
+        const subject = subjects.find(s => String(s.id) === String(subjectId));
         return subject ? `${subject.code} - ${subject.name}` : 'Unknown Subject';
     };
 
@@ -64,54 +65,51 @@ export const RubricsListScreen = ({ navigation }: Props) => {
 
     if (isLoading && rubrics.length === 0) {
         return (
-            <LinenBackground>
-                <GlossyNavBar title="Rubrics" />
+            <ScreenBackground>
+                <ModernNavBar title="Rubrics" />
                 <View style={styles.center}>
                     <LoadingSpinner />
                 </View>
-            </LinenBackground>
+            </ScreenBackground>
         );
     }
 
     return (
-        <LinenBackground>
-            <GlossyNavBar
+        <ScreenBackground>
+            <ModernNavBar
                 title="Exam Rubrics"
                 showBack
                 onBack={() => navigation.goBack()}
                 rightButton={
                     <TouchableOpacity onPress={handleAddRubric}>
-                        <Ionicons name="add" size={28} color="white" style={styles.navIcon} />
+                        <Ionicons name="add" size={24} color={colors.primary} />
                     </TouchableOpacity>
                 }
             />
 
-            {/* Filter Segmented Control Replacement - Custom Tab Bar */}
             <View style={styles.filterContainer}>
-                {STATUS_FILTERS.map((filter, index) => (
-                    <TouchableOpacity
-                        key={filter}
-                        style={[styles.filterTab, selectedFilter === index && styles.filterTabSelected]}
-                        onPress={() => setSelectedFilter(index)}
-                    >
-                        <Text style={[styles.filterText, selectedFilter === index && styles.filterTextSelected]}>
-                            {filter}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
+                <SegmentedControl
+                    segments={STATUS_FILTERS}
+                    selectedIndex={selectedFilter}
+                    onChange={setSelectedFilter}
+                />
             </View>
 
             <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
                 {filteredRubrics.length === 0 ? (
                     <View style={styles.emptyState}>
                         <Text style={styles.emptyText}>No {STATUS_FILTERS[selectedFilter]} Rubrics</Text>
-                        <GlossyButton title="Create New Rubric" onPress={handleAddRubric} style={styles.createButton} />
+                        <ModernButton
+                            title="Create New Rubric"
+                            onPress={handleAddRubric}
+                            variant="primary"
+                            style={styles.createButton}
+                        />
                     </View>
                 ) : (
                     filteredRubrics.map((rubric) => (
-                        <GlossyCard key={rubric.id} title={rubric.title}>
+                        <Card key={rubric.id} title={rubric.title} style={styles.card} onPress={() => handleRubricPress(rubric.id)}>
                             <TouchableOpacity
-                                onPress={() => handleRubricPress(rubric.id)}
                                 onLongPress={() => handleDeleteRubric(rubric.id)}
                             >
                                 <Text style={styles.subjectName}>{getSubjectName(rubric.subjectId)}</Text>
@@ -124,23 +122,27 @@ export const RubricsListScreen = ({ navigation }: Props) => {
                                         styles.statusBadge,
                                         rubric.status === 'generated' ? styles.statusGenerated : styles.statusDraft
                                     ]}>
-                                        <Text style={styles.statusText}>{rubric.status.toUpperCase()}</Text>
+                                        <Text style={[
+                                            styles.statusText,
+                                            rubric.status === 'generated' ? { color: colors.success } : { color: colors.textSecondary }
+                                        ]}>{rubric.status.toUpperCase()}</Text>
                                     </View>
 
                                     {rubric.status === 'created' && (
-                                        <GlossyButton
+                                        <ModernButton
                                             title="Generate"
                                             onPress={() => navigation.navigate('RubricDetail', { rubricId: rubric.id })}
                                             size="small"
+                                            variant="secondary"
                                         />
                                     )}
                                 </View>
                             </TouchableOpacity>
-                        </GlossyCard>
+                        </Card>
                     ))
                 )}
             </ScrollView>
-        </LinenBackground>
+        </ScreenBackground>
     );
 };
 
@@ -150,51 +152,9 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    navIcon: {
-        textShadowColor: 'rgba(0,0,0,0.5)',
-        textShadowOffset: { width: 0, height: -1 },
-        textShadowRadius: 0,
-    },
     filterContainer: {
-        flexDirection: 'row',
-        padding: spacing.md,
-        backgroundColor: 'rgba(0,0,0,0.1)',
-        marginHorizontal: spacing.md,
         marginTop: spacing.md,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
-        shadowColor: 'white',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 0,
-    },
-    filterTab: {
-        flex: 1,
-        alignItems: 'center',
-        paddingVertical: 6,
-        borderRadius: 8,
-    },
-    filterTabSelected: {
-        backgroundColor: 'rgba(0,0,0,0.3)',
-        shadowColor: 'black',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2, // inner shadow simulation? no, drop shadow
-        // To simulate inner shadow in RN is hard, just use darker bg
-    },
-    filterText: {
-        color: '#4C566C',
-        fontWeight: 'bold',
-        fontSize: 13,
-        textShadowColor: 'rgba(255,255,255,0.5)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 0,
-    },
-    filterTextSelected: {
-        color: 'white',
-        textShadowColor: 'rgba(0,0,0,0.5)',
-        textShadowOffset: { width: 0, height: -1 },
-        textShadowRadius: 0,
+        paddingHorizontal: spacing.md,
     },
     scrollView: {
         flex: 1,
@@ -202,6 +162,7 @@ const styles = StyleSheet.create({
     },
     contentContainer: {
         paddingBottom: spacing.xl,
+        paddingHorizontal: spacing.md,
     },
     emptyState: {
         padding: spacing.xl,
@@ -210,26 +171,24 @@ const styles = StyleSheet.create({
         marginTop: spacing.xl,
     },
     emptyText: {
-        color: '#666',
-        fontSize: 16,
+        ...typography.body,
+        color: colors.textSecondary,
         marginBottom: spacing.lg,
-        fontStyle: 'italic',
-        textShadowColor: 'white',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 0,
     },
     createButton: {
         minWidth: 200,
     },
+    card: {
+        marginBottom: spacing.md,
+    },
     subjectName: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        color: '#333',
+        ...typography.captionBold,
+        color: colors.primary,
         marginBottom: 4,
     },
     metaText: {
-        fontSize: 13,
-        color: '#666',
+        ...typography.caption,
+        color: colors.textSecondary,
         marginBottom: spacing.md,
     },
     footer: {
@@ -237,29 +196,27 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         marginTop: spacing.sm,
-        borderTopWidth: 1,
-        borderTopColor: '#EEE',
         paddingTop: spacing.sm,
+        borderTopWidth: StyleSheet.hairlineWidth,
+        borderTopColor: colors.divider,
     },
     statusBadge: {
         paddingHorizontal: 8,
         paddingVertical: 2,
         borderRadius: 10,
-        backgroundColor: '#DDD',
     },
     statusGenerated: {
-        backgroundColor: '#E0F8E0',
+        backgroundColor: colors.success + '20',
         borderWidth: 1,
-        borderColor: '#B0E0B0',
+        borderColor: colors.success + '50',
     },
     statusDraft: {
-        backgroundColor: '#F0F0F0',
+        backgroundColor: colors.systemGray5,
         borderWidth: 1,
-        borderColor: '#E0E0E0',
+        borderColor: colors.border,
     },
     statusText: {
         fontSize: 10,
         fontWeight: 'bold',
-        color: '#555',
     },
 });

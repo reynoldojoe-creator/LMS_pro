@@ -84,8 +84,12 @@ class LearningOutcomeCreate(BaseModel):
     code: str
     description: str
 
+class COMappingRequest(BaseModel):
+    co_id: int
+    weight: str # 'High', 'Moderate', 'Low', 'None'
+
 class TopicOutcomeMappingRequest(BaseModel):
-    co_ids: List[int]
+    co_mappings: List[COMappingRequest]
     lo_ids: List[int]
 
 class SubjectSchema(BaseModel):

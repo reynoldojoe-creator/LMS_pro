@@ -1,11 +1,20 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { colors, typography, spacing } from '../../theme';
-import { useAuthStore, useRubricStore } from '../../store';
-import { LinenBackground, GlossyNavBar, GlossyCard, GlossyButton } from '../../components/ios6';
+import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
+import { useAuthStore, useRubricStore, useFacultyStore } from '../../store';
+import { ScreenBackground, ModernNavBar, Card, ModernButton, Tag } from '../../components/common';
+import { Ionicons } from '@expo/vector-icons';
 
 type Props = NativeStackScreenProps<any, 'QuestionPreview'>;
+
+// ... keeping helper functions ...
+// (I will assume helper functions are same, but I need to include them in the file content if I replace everything)
+// Since I am replacing the whole file content for safety or just the component part?
+// The tool `replace_file_content` replaces a block.
+// I will replace the imports and the component part.
 
 // Helper functions (same as before)
 function extractJsonStringValue(jsonStr: string, key: string): string {
@@ -68,7 +77,7 @@ function parseQuestion(raw: any) {
     let bloomLevel = raw.bloomLevel || raw.bloom_level || '';
     let difficulty = raw.difficulty || '';
     let correctAnswer = raw.correctAnswer || raw.correct_answer || '';
-    let questionType = raw.type || raw.question_type || 'short_answer';
+    let questionType = raw.questionType || raw.type || raw.question_type || 'short_answer';
     let coId = raw.coId || raw.co_id || raw.co_ids || raw.mapped_co || '';
     let loId = raw.loId || raw.lo_id || raw.lo_ids || raw.mapped_lo || '';
     let validationScore = raw.validationScore || raw.validation_score || 0;
@@ -149,34 +158,72 @@ function parseQuestion(raw: any) {
         bloomLevel: bloomLevel || 'understand',
         difficulty: difficulty || 'medium',
         validationScore,
+        status: raw.status || 'pending',
     };
 }
 
 export const QuestionPreviewScreen = ({ navigation, route }: Props) => {
-    const { questionId } = route.params as { questionId: string };
+    const { questionId, question: passedQuestion, subjectId, topicId } = route.params as any;
     const { generatedQuestions } = useRubricStore();
+    const { questions: storeQuestions, updateQuestion, getSubjectById } = useFacultyStore();
     const { currentRole } = useAuthStore();
 
-    const foundQuestion = generatedQuestions.find(q => String(q.id) === String(questionId));
+    // Find question from appropriate store or use passed object
+    let foundQuestion = passedQuestion;
+    if (!foundQuestion && questionId) {
+        foundQuestion = generatedQuestions.find(q => String(q.id) === String(questionId)) ||
+            storeQuestions.find(q => String(q.id) === String(questionId));
+    }
+
     const question = foundQuestion ? parseQuestion(foundQuestion) : parseQuestion({});
 
+    // Resolve CO/LO mappings if N/A and we have context
+    if (subjectId && topicId && (question.coMapping.includes('N/A') || question.loMapping.includes('N/A'))) {
+        const subject = getSubjectById(subjectId);
+        const topic = (subject?.topics || []).find(t => t.id === topicId) ||
+            subject?.units.flatMap(u => u.topics || []).find(t => t.id === topicId);
+
+        if (topic) {
+            if (question.coMapping.includes('N/A') && topic.mappedCOs?.length > 0) {
+                question.coMapping = topic.mappedCOs.map((co: any) => co.code || co.id);
+            }
+            if (question.loMapping.includes('N/A') && topic.learningOutcomes?.length > 0) {
+                question.loMapping = topic.learningOutcomes.map((lo: any) => lo.code || lo.id);
+            }
+        }
+    }
+
     const handleEdit = () => {
-        // TODO
+        Alert.alert("Edit", "Edit functionality coming soon.");
     };
 
-    const handleApprove = () => {
-        // TODO
-        navigation.goBack();
+    const handleApprove = async () => {
+        if (foundQuestion?.id) {
+            await updateQuestion(foundQuestion.id, { status: 'approved' });
+            navigation.goBack();
+        }
     };
 
-    const handleDiscard = () => {
-        // TODO
-        navigation.goBack();
+    const handleDiscard = async () => {
+        if (foundQuestion?.id) {
+            await updateQuestion(foundQuestion.id, { status: 'rejected' });
+            navigation.goBack();
+        }
     };
+
+    const handleQuarantine = async () => {
+        if (foundQuestion?.id) {
+            await updateQuestion(foundQuestion.id, { status: 'quarantined' });
+            navigation.goBack();
+        }
+    };
+
+    const isVetter = currentRole === 'vetter';
+    const isMCQ = question.type?.toLowerCase().includes('mcq');
 
     return (
-        <LinenBackground>
-            <GlossyNavBar
+        <ScreenBackground>
+            <ModernNavBar
                 title="Question Preview"
                 showBack
                 onBack={() => navigation.goBack()}
@@ -188,94 +235,207 @@ export const QuestionPreviewScreen = ({ navigation, route }: Props) => {
             />
 
             <ScrollView contentContainerStyle={styles.content}>
+                <View style={styles.badgeRow}>
+                    <Tag label={question.type.toUpperCase()} size="sm" variant="default" color={colors.systemGray5} />
+                    <Tag label={question.difficulty} size="sm" variant="difficulty" difficulty={question.difficulty as any} />
+                    <Tag label={question.bloomLevel} size="sm" variant="bloom" bloomLevel={question.bloomLevel as any} />
+                </View>
+
                 {/* Question Text */}
-                <GlossyCard title="Question">
+                <Card title="Question">
                     <Text style={styles.questionText}>{question.text}</Text>
-                </GlossyCard>
+                </Card>
 
                 {/* Options (for MCQ) */}
-                {question.type === 'mcq' && question.options && (
-                    <GlossyCard title="Options">
-                        {question.options.map((option, index) => (
-                            <View
-                                key={index}
-                                style={[
-                                    styles.option,
-                                    option === question.correctAnswer && styles.optionCorrect,
-                                ]}
-                            >
-                                <Text style={styles.optionLabel}>{String.fromCharCode(65 + index)}.</Text>
-                                <Text style={[
-                                    styles.optionText,
-                                    option === question.correctAnswer && styles.optionTextCorrect,
-                                ]}>
-                                    {option}
-                                </Text>
-                                {option === question.correctAnswer && (
-                                    <Text style={styles.correctBadge}>✓ Correct</Text>
-                                )}
-                            </View>
-                        ))}
-                    </GlossyCard>
+                {isMCQ && question.options && (
+                    <Card title="Options">
+                        {question.options.map((option, index) => {
+                            const optionLetter = String.fromCharCode(65 + index);
+                            const answerLen = question.correctAnswer?.length || 0;
+                            const isCorrect =
+                                question.correctAnswer === optionLetter ||
+                                option === question.correctAnswer ||
+                                (answerLen > 1 && option.includes(question.correctAnswer));
+                            return (
+                                <View
+                                    key={index}
+                                    style={[
+                                        styles.option,
+                                        isCorrect && styles.optionCorrect,
+                                    ]}
+                                >
+                                    <Text style={styles.optionLabel}>{String.fromCharCode(65 + index)}.</Text>
+                                    <Text style={[
+                                        styles.optionText,
+                                        isCorrect && styles.optionTextCorrect,
+                                    ]}>
+                                        {option}
+                                    </Text>
+                                    {isCorrect && (
+                                        <Text style={styles.correctBadge}>✓ Correct</Text>
+                                    )}
+                                </View>
+                            );
+                        })}
+                    </Card>
                 )}
 
-                {/* Explanation */}
-                <GlossyCard title="Explanation">
-                    <Text style={styles.bodyText}>{question.explanation}</Text>
-                </GlossyCard>
+                {/* Explanation - Vetter Only */}
+                {isVetter && (
+                    <Card title="Explanation">
+                        <Text style={styles.bodyText}>{question.explanation}</Text>
+                    </Card>
+                )}
 
-                {/* Key Points */}
-                <GlossyCard title="Key Points">
-                    {question.keyPoints.map((point, index) => (
-                        <View key={index} style={styles.keyPoint}>
-                            <Text style={styles.bullet}>•</Text>
-                            <Text style={styles.bodyText}>{point}</Text>
-                        </View>
-                    ))}
-                </GlossyCard>
+                {/* Key Points - Vetter Only */}
+                {isVetter && (
+                    <Card title="Key Points">
+                        {question.keyPoints.map((point, index) => (
+                            <View key={index} style={styles.keyPoint}>
+                                <Text style={styles.bullet}>•</Text>
+                                <Text style={styles.bodyText}>{point}</Text>
+                            </View>
+                        ))}
+                    </Card>
+                )}
 
                 {/* Metadata */}
-                <GlossyCard title="Metadata">
-                    <View style={styles.metadataRow}>
-                        <Text style={styles.metadataLabel}>CO Mapping:</Text>
-                        <Text style={styles.metadataValue}>{question.coMapping.join(', ')}</Text>
-                    </View>
+                <Card title="Metadata">
                     <View style={styles.metadataRow}>
                         <Text style={styles.metadataLabel}>LO Mapping:</Text>
-                        <Text style={styles.metadataValue}>{question.loMapping.join(', ')}</Text>
+                        <Text style={styles.metadataValue}>
+                            {question.loMapping.map((lo: string) => lo.split(':')[0].trim()).join(', ')}
+                        </Text>
                     </View>
-                </GlossyCard>
+                </Card>
 
-                {/* Actions */}
-                {currentRole !== 'faculty' && (
+                {/* Actions - Vetter Only */}
+                {isVetter && (
                     <View style={styles.actionSection}>
-                        <GlossyButton title="Approve Question" onPress={handleApprove} />
-                        <View style={styles.actionGap} />
-                        <GlossyButton title="Discard Question" onPress={handleDiscard} style={styles.discardButton} />
+                        <ModernButton
+                            title="Approve"
+                            onPress={handleApprove}
+                            variant="primary"
+                            style={styles.actionButton}
+                        />
+                        <View style={styles.row}>
+                            <ModernButton
+                                title="Reject"
+                                onPress={handleDiscard}
+                                variant="destructive"
+                                style={[styles.actionButton, styles.flex1]}
+                            />
+                            <View style={{ width: spacing.md }} />
+                            <ModernButton
+                                title="Quarantine"
+                                onPress={handleQuarantine}
+                                variant="secondary"
+                                style={[styles.actionButton, styles.flex1]}
+                            />
+                        </View>
                     </View>
                 )}
             </ScrollView>
-        </LinenBackground>
+        </ScreenBackground>
     );
 };
 
 const styles = StyleSheet.create({
-    content: { paddingBottom: spacing.xl },
-    navText: { color: 'white', fontWeight: 'bold', fontSize: 16, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: -1 }, textShadowRadius: 0 },
-    questionText: { fontSize: 16, fontWeight: '500', color: '#333', lineHeight: 24 },
-    option: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 10, borderRadius: 5, marginBottom: 5 },
-    optionCorrect: { backgroundColor: '#E0F8E0', borderWidth: 1, borderColor: '#B0E0B0' },
-    optionLabel: { fontWeight: 'bold', color: '#333', marginRight: 10, minWidth: 20 },
-    optionText: { flex: 1, color: '#333', fontSize: 14 },
-    optionTextCorrect: { fontWeight: 'bold', color: '#006400' },
-    correctBadge: { fontSize: 12, fontWeight: 'bold', color: '#006400', marginLeft: 5 },
-    bodyText: { fontSize: 14, color: '#333', lineHeight: 20 },
-    keyPoint: { flexDirection: 'row', marginBottom: 5 },
-    bullet: { fontSize: 16, color: colors.primary, marginRight: 5 },
-    metadataRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#EEE' },
-    metadataLabel: { fontWeight: 'bold', color: '#666', width: 100 },
-    metadataValue: { flex: 1, color: '#333' },
-    actionSection: { padding: 20 },
-    actionGap: { height: 10 },
-    discardButton: { backgroundColor: '#FF3B30' },
+    content: {
+        padding: spacing.md,
+        paddingBottom: spacing.xxl
+    },
+    navText: {
+        ...typography.body,
+        color: colors.primary,
+        fontWeight: 'bold'
+    },
+    badgeRow: {
+        flexDirection: 'row',
+        gap: spacing.sm,
+        marginBottom: spacing.md,
+        flexWrap: 'wrap'
+    },
+    questionText: {
+        ...typography.h3,
+        color: colors.text,
+        lineHeight: 24
+    },
+    option: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.sm,
+        borderRadius: spacing.sm,
+        marginBottom: spacing.xs
+    },
+    optionCorrect: {
+        backgroundColor: colors.green + '20', // 20% opacity
+        borderWidth: 1,
+        borderColor: colors.green
+    },
+    optionLabel: {
+        ...typography.bodyBold,
+        color: colors.text,
+        marginRight: spacing.sm,
+        minWidth: 20
+    },
+    optionText: {
+        flex: 1,
+        ...typography.body,
+        color: colors.text
+    },
+    optionTextCorrect: {
+        ...typography.bodyBold,
+        color: colors.green
+    },
+    correctBadge: {
+        ...typography.caption1,
+        color: colors.green,
+        marginLeft: spacing.sm,
+        fontWeight: 'bold'
+    },
+    bodyText: {
+        ...typography.body,
+        color: colors.textSecondary
+    },
+    keyPoint: {
+        flexDirection: 'row',
+        marginBottom: spacing.xs
+    },
+    bullet: {
+        fontSize: 16,
+        color: colors.primary,
+        marginRight: spacing.sm
+    },
+    metadataRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: spacing.sm,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: colors.separator
+    },
+    metadataLabel: {
+        ...typography.caption1,
+        color: colors.textSecondary,
+        width: 100
+    },
+    metadataValue: {
+        flex: 1,
+        ...typography.body,
+        color: colors.text
+    },
+    actionSection: {
+        marginTop: spacing.xl,
+        gap: spacing.md
+    },
+    row: {
+        flexDirection: 'row',
+    },
+    flex1: {
+        flex: 1
+    },
+    actionButton: {
+        marginBottom: spacing.sm
+    }
 });

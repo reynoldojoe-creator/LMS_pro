@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, TextInput, Modal as RNModal } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFacultyStore } from '../../store/facultyStore';
-import { LinenBackground, GlossyNavBar, GlossyCard, GlossyButton, GroupedTableView } from '../../components/ios6';
 import { colors } from '../../theme/colors';
-import { spacing, typography } from '../../theme';
+import { typography } from '../../theme/typography';
+import { spacing, borderRadius } from '../../theme/spacing';
 import { Ionicons } from '@expo/vector-icons';
-import { Tag } from '../../components/common'; // Keep Tag for now or refactor to gloss
+import { ScreenBackground, ModernNavBar, Card, ModernButton, InsetGroupedList, Tag } from '../../components/common';
 
 type Props = NativeStackScreenProps<any, 'SubjectDetail'>;
 
@@ -27,7 +27,8 @@ export const SubjectDetailScreen = ({ route, navigation }: Props) => {
     const [selectedCO, setSelectedCO] = useState<any>(null);
     const [isMapperVisible, setIsMapperVisible] = useState(false);
     const [selectedTopicIds, setSelectedTopicIds] = useState<string[]>([]);
-    const [mappingWeight, setMappingWeight] = useState<'low' | 'moderate' | 'high'>('moderate');
+    // Per-topic intensity weights: { topicId: 'High' | 'Moderate' | 'Low' | 'None' }
+    const [topicWeights, setTopicWeights] = useState<Record<string, string>>({});
     const [isSuggesting, setIsSuggesting] = useState(false);
     const [isMapping, setIsMapping] = useState(false);
 
@@ -49,12 +50,12 @@ export const SubjectDetailScreen = ({ route, navigation }: Props) => {
 
     if (!subject) {
         return (
-            <LinenBackground>
-                <GlossyNavBar title="Loading..." showBack onBack={() => navigation.goBack()} />
+            <ScreenBackground>
+                <ModernNavBar title="Loading..." showBack onBack={() => navigation.goBack()} />
                 <View style={styles.center}>
-                    <ActivityIndicator color="#4C566C" />
+                    <ActivityIndicator color={colors.primary} />
                 </View>
-            </LinenBackground>
+            </ScreenBackground>
         );
     }
 
@@ -83,9 +84,13 @@ export const SubjectDetailScreen = ({ route, navigation }: Props) => {
         if (!selectedCO) return;
         setIsMapping(true);
         try {
-            await bulkMapCOTopics(subjectId, selectedCO.id, selectedTopicIds, mappingWeight);
+            // Build coMappings array from topicWeights
+            const coMappings = Object.entries(topicWeights)
+                .filter(([_, weight]) => weight !== 'None')
+                .map(([topicId, weight]) => ({ topic_id: parseInt(topicId), weight }));
+            await bulkMapCOTopics(subjectId, selectedCO.id, coMappings);
             setIsMapperVisible(false);
-            Alert.alert("Success", `Mapped ${selectedTopicIds.length} topics to ${selectedCO.code}`);
+            Alert.alert("Success", `Mapped ${coMappings.length} topics to ${selectedCO.code}`);
         } catch (e) {
             Alert.alert("Error", "Failed to map topics");
         } finally {
@@ -94,9 +99,16 @@ export const SubjectDetailScreen = ({ route, navigation }: Props) => {
     };
 
     const toggleTopic = (topicId: string) => {
-        setSelectedTopicIds(prev =>
-            prev.includes(topicId) ? prev.filter(id => id !== topicId) : [...prev, topicId]
-        );
+        setTopicWeights(prev => {
+            const current = prev[topicId] || 'None';
+            const cycle = ['None', 'Low', 'Moderate', 'High'];
+            const nextIdx = (cycle.indexOf(current) + 1) % cycle.length;
+            return { ...prev, [topicId]: cycle[nextIdx] };
+        });
+    };
+
+    const setTopicWeight = (topicId: string, weight: string) => {
+        setTopicWeights(prev => ({ ...prev, [topicId]: weight }));
     };
 
     const handleAddTopic = async () => {
@@ -154,16 +166,73 @@ export const SubjectDetailScreen = ({ route, navigation }: Props) => {
     };
 
     // Prepare sections for GroupedTableView (Topics)
-    const topicSectionData = allTopics.map(topic => ({
+    const topicItems = allTopics.map(topic => ({
+        id: topic.id.toString(),
         title: topic.name,
-        subtitle: `${(topic.learningOutcomes || []).length} LOs mapped`, // Placeholder for subtitle, maybe LO count?
+        subtitle: `${(topic.learningOutcomes || []).length} LOs mapped`,
         onPress: () => navigation.navigate('TopicDetail', { subjectId, topicId: topic.id }),
-        chevron: true
+        showChevron: true,
+        icon: 'document-text-outline' as any
     }));
 
+    // Render Modal Content
+    const renderMappingModal = (
+        visible: boolean,
+        onClose: () => void,
+        title: string,
+        subtitle: string,
+        items: typeof allTopics,
+        selectedIds: string[],
+        onToggle: (id: string) => void,
+        onSave: () => void,
+        isSaving: boolean
+    ) => (
+        <RNModal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+            <View style={styles.modalOverlay}>
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>{title}</Text>
+                        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                            <Ionicons name="close-circle" size={24} color={colors.textSecondary} />
+                        </TouchableOpacity>
+                    </View>
+                    <Text style={styles.modalSubtitle}>{subtitle}</Text>
+
+                    <ScrollView style={styles.modalScroll}>
+                        {items.map(item => {
+                            const isSelected = selectedIds.includes(item.id.toString());
+                            return (
+                                <TouchableOpacity
+                                    key={item.id}
+                                    style={[styles.topicRow, isSelected && styles.topicRowSelected]}
+                                    onPress={() => onToggle(item.id.toString())}
+                                >
+                                    <Text style={[styles.topicRowText, isSelected && styles.topicRowTextSelected]}>
+                                        {item.name}
+                                    </Text>
+                                    {isSelected && <Ionicons name="checkmark-circle" size={22} color={colors.primary} />}
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
+
+                    <View style={styles.modalFooter}>
+                        <ModernButton
+                            title={isSaving ? "Saving..." : "Save Mapping"}
+                            onPress={onSave}
+                            disabled={isSaving}
+                            variant="primary"
+                            style={{ width: '100%' }}
+                        />
+                    </View>
+                </View>
+            </View>
+        </RNModal>
+    );
+
     return (
-        <LinenBackground>
-            <GlossyNavBar
+        <ScreenBackground>
+            <ModernNavBar
                 title={subject.code}
                 showBack
                 onBack={() => navigation.goBack()}
@@ -176,8 +245,8 @@ export const SubjectDetailScreen = ({ route, navigation }: Props) => {
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
 
-                {/* Overview */}
-                <GlossyCard title="Overview">
+                {/* Overview Card */}
+                <Card title="Overview">
                     <Text style={styles.subjectName}>{subject.name}</Text>
                     <View style={styles.statsRow}>
                         <View style={styles.statBox}>
@@ -195,80 +264,118 @@ export const SubjectDetailScreen = ({ route, navigation }: Props) => {
                             <Text style={styles.statLabel}>LOs</Text>
                         </View>
                     </View>
-                </GlossyCard>
+                </Card>
 
                 {/* Course Outcomes */}
-                <Text style={styles.sectionHeader}>COURSE OUTCOMES</Text>
+                <Text style={styles.sectionHeader}>Course Outcomes</Text>
                 {(subject.courseOutcomes || []).map((co: any) => (
-                    <GlossyCard key={co.id} title={co.code}>
+                    <Card key={co.id} title={co.code}>
                         <Text style={styles.description}>{co.description}</Text>
 
                         <View style={styles.mappedInfo}>
                             <Text style={styles.label}>Mapped Topics: {(co.topics || []).length}</Text>
                             <View style={styles.chips}>
                                 {(co.topics || []).slice(0, 5).map((t: any) => (
-                                    <View key={t.id} style={styles.chip}><Text style={styles.chipText}>{t.name}</Text></View>
+                                    <Tag key={t.id} label={t.name} variant="default" size="sm" />
                                 ))}
                                 {(co.topics || []).length > 5 && <Text style={styles.moreText}>+{co.topics.length - 5} more</Text>}
                             </View>
                         </View>
 
                         <View style={styles.actions}>
-                            <GlossyButton title="Map Topics" onPress={() => {
-                                setSelectedCO(co);
-                                setSelectedTopicIds((co.topics || []).map((t: any) => t.id.toString()));
-                                setIsMapperVisible(true);
-                            }} size="small" style={{ flex: 1, marginRight: 5 }} />
-                            <GlossyButton title="Auto-Suggest" onPress={() => handleAutoSuggest(co)} size="small" style={{ flex: 1, marginLeft: 5 }} />
+                            <ModernButton
+                                title="Map"
+                                onPress={() => {
+                                    setSelectedCO(co);
+                                    // Initialize per-topic weights from existing mapped topics
+                                    const weights: Record<string, string> = {};
+                                    allTopics.forEach(t => { weights[t.id.toString()] = 'None'; });
+                                    (co.topics || []).forEach((t: any) => {
+                                        weights[t.id.toString()] = t.weight || 'Moderate';
+                                    });
+                                    setTopicWeights(weights);
+                                    setIsMapperVisible(true);
+                                }}
+                                variant="outline"
+                                size="small"
+                                style={{ flex: 1, marginRight: 5 }}
+                            />
+                            <ModernButton
+                                title="AI Suggest"
+                                onPress={() => handleAutoSuggest(co)}
+                                variant="secondary"
+                                size="small"
+                                style={{ flex: 1, marginLeft: 5 }}
+                                loading={isSuggesting && selectedCO?.id === co.id}
+                            />
                         </View>
-                    </GlossyCard>
+                    </Card>
                 ))}
 
                 {/* Learning Outcomes */}
-                <Text style={styles.sectionHeader}>LEARNING OUTCOMES</Text>
+                <Text style={styles.sectionHeader}>Learning Outcomes</Text>
                 {(subject.learningOutcomes || []).map((lo: any) => (
-                    <GlossyCard key={lo.id} title={lo.code}>
+                    <Card key={lo.id} title={lo.code}>
                         <Text style={styles.description}>{lo.description}</Text>
 
                         <View style={styles.mappedInfo}>
                             <Text style={styles.label}>Mapped Topics: {(lo.topics || []).length}</Text>
                             <View style={styles.chips}>
                                 {(lo.topics || []).slice(0, 5).map((t: any) => (
-                                    <View key={t.id} style={styles.chip}><Text style={styles.chipText}>{t.name}</Text></View>
+                                    <Tag key={t.id} label={t.name} variant="default" size="sm" />
                                 ))}
                                 {(lo.topics || []).length > 5 && <Text style={styles.moreText}>+{lo.topics.length - 5} more</Text>}
                             </View>
                         </View>
 
                         <View style={styles.actions}>
-                            <GlossyButton title="Map Topics" onPress={() => {
-                                setSelectedLO(lo);
-                                setSelectedLOTopicIds((lo.topics || []).map((t: any) => t.id.toString()));
-                                setIsLOMapperVisible(true);
-                            }} size="small" style={{ flex: 1, marginRight: 5 }} />
-                            <GlossyButton title="Auto-Suggest" onPress={() => handleLOAutoSuggest(lo)} size="small" style={{ flex: 1, marginLeft: 5 }} />
+                            <ModernButton
+                                title="Map"
+                                onPress={() => {
+                                    setSelectedLO(lo);
+                                    setSelectedLOTopicIds((lo.topics || []).map((t: any) => t.id.toString()));
+                                    setIsLOMapperVisible(true);
+                                }}
+                                variant="outline"
+                                size="small"
+                                style={{ flex: 1, marginRight: 5 }}
+                            />
+                            <ModernButton
+                                title="AI Suggest"
+                                onPress={() => handleLOAutoSuggest(lo)}
+                                variant="secondary"
+                                size="small"
+                                style={{ flex: 1, marginLeft: 5 }}
+                                loading={isLOSuggesting && selectedLO?.id === lo.id}
+                            />
                         </View>
-                    </GlossyCard>
+                    </Card>
                 ))}
 
                 {/* Topics */}
-                <Text style={styles.sectionHeader}>TOPICS</Text>
-                <GlossyCard>
+                <Text style={styles.sectionHeader}>Topics</Text>
+                <Card>
                     <View style={styles.addTopicRow}>
                         <TextInput
                             style={styles.input}
                             placeholder="New Topic Name"
+                            placeholderTextColor={colors.textTertiary}
                             value={newTopicName}
                             onChangeText={setNewTopicName}
                         />
-                        <GlossyButton title="Add" onPress={handleAddTopic} disabled={isAddingTopic} size="small" />
+                        <ModernButton
+                            title="Add"
+                            onPress={handleAddTopic}
+                            disabled={isAddingTopic}
+                            loading={isAddingTopic}
+                            size="small"
+                        />
                     </View>
-                </GlossyCard>
+                </Card>
 
-                {topicSectionData.length > 0 ? (
-                    <GroupedTableView
-                        sections={[{ data: topicSectionData }]} // Correct structure for SectionList: [{ data: [...] }]
-                        scrollEnabled={false} // Nested in ScrollView
+                {topicItems.length > 0 ? (
+                    <InsetGroupedList
+                        items={topicItems}
                     />
                 ) : (
                     <View style={styles.emptyState}>
@@ -279,90 +386,133 @@ export const SubjectDetailScreen = ({ route, navigation }: Props) => {
                 <View style={{ height: 40 }} />
             </ScrollView>
 
-            {/* CO Mapper Modal */}
-            <RNModal visible={isMapperVisible} transparent animationType="slide">
+            {/* Modals */}
+            {/* CO Mapping Modal with Intensity */}
+            <RNModal visible={isMapperVisible} transparent animationType="slide" onRequestClose={() => setIsMapperVisible(false)}>
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContainer}>
-                        <GlossyNavBar title={`Map to ${selectedCO?.code || 'CO'}`} rightButton={<TouchableOpacity onPress={() => setIsMapperVisible(false)}><Text style={styles.navText}>Close</Text></TouchableOpacity>} />
-                        <View style={styles.modalBody}>
-                            <Text style={styles.modalSubtitle}>{selectedCO?.description}</Text>
-                            <ScrollView style={styles.topicList}>
-                                {allTopics.map(topic => (
-                                    <TouchableOpacity
-                                        key={topic.id}
-                                        style={[styles.topicRow, selectedTopicIds.includes(topic.id.toString()) && styles.topicRowSelected]}
-                                        onPress={() => toggleTopic(topic.id.toString())}
-                                    >
-                                        <Text style={styles.topicRowText}>{topic.name}</Text>
-                                        {selectedTopicIds.includes(topic.id.toString()) && <Ionicons name="checkmark" size={20} color={colors.primary} />}
-                                    </TouchableOpacity>
-                                ))}
-                            </ScrollView>
-                            <GlossyButton title={isMapping ? "Saving..." : "Save Mapping"} onPress={handleBulkMap} disabled={isMapping} style={{ marginTop: 10 }} />
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Map to {selectedCO?.code}</Text>
+                            <TouchableOpacity onPress={() => setIsMapperVisible(false)} style={styles.closeButton}>
+                                <Ionicons name="close-circle" size={24} color={colors.textSecondary} />
+                            </TouchableOpacity>
+                        </View>
+                        <Text style={styles.modalSubtitle}>{selectedCO?.description}</Text>
+                        <View style={styles.intensityLegend}>
+                            <View style={[styles.legendDot, { backgroundColor: '#34C759' }]} /><Text style={styles.legendLabel}>High</Text>
+                            <View style={[styles.legendDot, { backgroundColor: '#FF9500' }]} /><Text style={styles.legendLabel}>Moderate</Text>
+                            <View style={[styles.legendDot, { backgroundColor: '#FFCC00' }]} /><Text style={styles.legendLabel}>Low</Text>
+                            <View style={[styles.legendDot, { backgroundColor: colors.systemGray4 }]} /><Text style={styles.legendLabel}>None</Text>
+                        </View>
+
+                        <ScrollView style={styles.modalScroll}>
+                            {allTopics.map(item => {
+                                const weight = topicWeights[item.id.toString()] || 'None';
+                                return (
+                                    <View key={item.id} style={styles.intensityRow}>
+                                        <Text style={styles.intensityTopicName} numberOfLines={2}>{item.name}</Text>
+                                        <View style={styles.intensityButtons}>
+                                            {['None', 'Low', 'Moderate', 'High'].map(level => {
+                                                const isActive = weight === level;
+                                                const bgColor = level === 'High' ? '#34C759' : level === 'Moderate' ? '#FF9500' : level === 'Low' ? '#FFCC00' : colors.systemGray5;
+                                                return (
+                                                    <TouchableOpacity
+                                                        key={level}
+                                                        style={[
+                                                            styles.intensityBtn,
+                                                            isActive && { backgroundColor: bgColor, borderColor: bgColor }
+                                                        ]}
+                                                        onPress={() => setTopicWeight(item.id.toString(), level)}
+                                                    >
+                                                        <Text style={[
+                                                            styles.intensityBtnText,
+                                                            isActive && { color: level === 'None' ? colors.text : '#fff', fontWeight: '700' }
+                                                        ]}>
+                                                            {level === 'None' ? '—' : level.charAt(0)}
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                );
+                                            })}
+                                        </View>
+                                    </View>
+                                );
+                            })}
+                        </ScrollView>
+
+                        <View style={styles.modalFooter}>
+                            <ModernButton
+                                title={isMapping ? "Saving..." : "Save Mapping"}
+                                onPress={handleBulkMap}
+                                disabled={isMapping}
+                                variant="primary"
+                                style={{ width: '100%' }}
+                            />
                         </View>
                     </View>
                 </View>
             </RNModal>
 
-            {/* LO Mapper Modal */}
-            <RNModal visible={isLOMapperVisible} transparent animationType="slide">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContainer}>
-                        <GlossyNavBar title={`Map to ${selectedLO?.code || 'LO'}`} rightButton={<TouchableOpacity onPress={() => setIsLOMapperVisible(false)}><Text style={styles.navText}>Close</Text></TouchableOpacity>} />
-                        <View style={styles.modalBody}>
-                            <Text style={styles.modalSubtitle}>{selectedLO?.description}</Text>
-                            <ScrollView style={styles.topicList}>
-                                {allTopics.map(topic => (
-                                    <TouchableOpacity
-                                        key={topic.id}
-                                        style={[styles.topicRow, selectedLOTopicIds.includes(topic.id.toString()) && styles.topicRowSelected]}
-                                        onPress={() => toggleLOTopic(topic.id.toString())}
-                                    >
-                                        <Text style={styles.topicRowText}>{topic.name}</Text>
-                                        {selectedLOTopicIds.includes(topic.id.toString()) && <Ionicons name="checkmark" size={20} color={colors.primary} />}
-                                    </TouchableOpacity>
-                                ))}
-                            </ScrollView>
-                            <GlossyButton title={isLOMapping ? "Saving..." : "Save Mapping"} onPress={handleLOBulkMap} disabled={isLOMapping} style={{ marginTop: 10 }} />
-                        </View>
-                    </View>
-                </View>
-            </RNModal>
+            {renderMappingModal(
+                isLOMapperVisible,
+                () => setIsLOMapperVisible(false),
+                `Map to ${selectedLO?.code}`,
+                selectedLO?.description,
+                allTopics,
+                selectedLOTopicIds,
+                toggleLOTopic,
+                handleLOBulkMap,
+                isLOMapping
+            )}
 
-        </LinenBackground>
+        </ScreenBackground>
     );
 };
 
 const styles = StyleSheet.create({
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    scrollContent: { paddingBottom: 40, paddingHorizontal: 10 },
-    navText: { color: 'white', fontWeight: 'bold', fontSize: 16, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: -1 }, textShadowRadius: 0 },
-    subjectName: { fontSize: 22, fontWeight: 'bold', color: '#333', textAlign: 'center', marginBottom: 15, textShadowColor: 'white', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 0 },
-    statsRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+    scrollContent: { paddingBottom: 40, paddingHorizontal: spacing.screenHorizontal, paddingTop: spacing.md },
+    navText: { ...typography.body, color: colors.primary },
+    subjectName: { ...typography.h3, color: colors.text, textAlign: 'center', marginBottom: spacing.md },
+    statsRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: spacing.sm },
     statBox: { alignItems: 'center', minWidth: 60 },
-    statValue: { fontSize: 20, fontWeight: 'bold', color: '#4C566C' },
-    statLabel: { fontSize: 12, color: '#888' },
-    statDivider: { width: 1, height: 30, backgroundColor: '#CCC', marginHorizontal: 10 },
-    sectionHeader: { fontSize: 14, fontWeight: 'bold', color: '#4C566C', marginTop: 20, marginBottom: 5, marginLeft: 10, textShadowColor: 'rgba(255,255,255,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 0 },
-    description: { fontSize: 14, color: '#333', marginBottom: 10 },
-    mappedInfo: { marginBottom: 10 },
-    label: { fontSize: 12, fontWeight: 'bold', color: '#666', marginBottom: 5 },
-    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
-    chip: { backgroundColor: '#E0E0E0', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-    chipText: { fontSize: 11, color: '#333' },
-    moreText: { fontSize: 11, color: '#888', alignSelf: 'center' },
-    actions: { flexDirection: 'row', marginTop: 5 },
-    addTopicRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    input: { flex: 1, borderWidth: 1, borderColor: '#CCC', borderRadius: 5, padding: 8, backgroundColor: 'white', height: 40 },
-    emptyState: { padding: 20, alignItems: 'center' },
-    emptyText: { color: '#888', fontStyle: 'italic' },
+    statValue: { ...typography.h2, color: colors.text },
+    statLabel: { ...typography.caption1, color: colors.textSecondary },
+    statDivider: { width: 1, height: 30, backgroundColor: colors.separator, marginHorizontal: spacing.md },
+    sectionHeader: { ...typography.headline, color: colors.textSecondary, marginTop: spacing.xl, marginBottom: spacing.xs, marginLeft: 4 },
+    description: { ...typography.body, color: colors.text, marginBottom: spacing.sm },
+    mappedInfo: { marginBottom: spacing.md },
+    label: { ...typography.caption1, fontWeight: '600', color: colors.textSecondary, marginBottom: 4 },
+    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+    moreText: { ...typography.caption1, color: colors.textTertiary, alignSelf: 'center' },
+    actions: { flexDirection: 'row', marginTop: spacing.xs },
+    addTopicRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    input: { flex: 1, height: 36, backgroundColor: colors.systemGray6, borderRadius: 8, paddingHorizontal: 12, ...typography.body, color: colors.text },
+    emptyState: { padding: spacing.xl, alignItems: 'center' },
+    emptyText: { ...typography.body, color: colors.textTertiary, fontStyle: 'italic' },
+
     // Modal
     modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
-    modalContainer: { height: '80%', backgroundColor: '#E0E0E0', borderTopLeftRadius: 10, borderTopRightRadius: 10, overflow: 'hidden' },
-    modalBody: { flex: 1, padding: 15 },
-    modalSubtitle: { fontSize: 14, color: '#555', marginBottom: 10, fontStyle: 'italic' },
-    topicList: { flex: 1, backgroundColor: 'white', borderRadius: 5, borderWidth: 1, borderColor: '#CCC', marginBottom: 10 },
-    topicRow: { flexDirection: 'row', justifyContent: 'space-between', padding: 12, borderBottomWidth: 1, borderBottomColor: '#EEE', alignItems: 'center' },
-    topicRowSelected: { backgroundColor: '#F0F8FF' },
-    topicRowText: { fontSize: 14, color: '#333' }
+    modalContainer: { height: '85%', backgroundColor: colors.background, borderTopLeftRadius: 16, borderTopRightRadius: 16, overflow: 'hidden' },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.separator },
+    modalTitle: { ...typography.headline, color: colors.text },
+    closeButton: {},
+    modalSubtitle: { ...typography.caption1, color: colors.textSecondary, padding: spacing.md, paddingBottom: 0 },
+    modalScroll: { flex: 1 },
+    topicRow: { flexDirection: 'row', justifyContent: 'space-between', padding: spacing.md, borderBottomWidth: 0.5, borderBottomColor: colors.separator, alignItems: 'center', backgroundColor: colors.card },
+    topicRowSelected: { backgroundColor: colors.systemGray6 },
+    topicRowText: { ...typography.body, color: colors.text },
+    topicRowTextSelected: { fontWeight: '600', color: colors.primary },
+    modalFooter: { padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.separator, backgroundColor: colors.background },
+
+    // Intensity Legend
+    intensityLegend: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.xs, gap: 4, borderBottomWidth: 0.5, borderBottomColor: colors.separator },
+    legendDot: { width: 10, height: 10, borderRadius: 5, marginLeft: 8 },
+    legendLabel: { ...typography.caption2, color: colors.textSecondary },
+
+    // Intensity Row
+    intensityRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderBottomWidth: 0.5, borderBottomColor: colors.separator, backgroundColor: colors.card },
+    intensityTopicName: { ...typography.body, color: colors.text, flex: 1, marginRight: spacing.sm },
+    intensityButtons: { flexDirection: 'row', gap: 4 },
+    intensityBtn: { width: 32, height: 32, borderRadius: 8, borderWidth: 1.5, borderColor: colors.systemGray4, justifyContent: 'center', alignItems: 'center' },
+    intensityBtnText: { ...typography.caption1, color: colors.textSecondary, fontWeight: '500' },
 });

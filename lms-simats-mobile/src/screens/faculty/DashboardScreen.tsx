@@ -6,21 +6,19 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useFacultyStore } from '../../store/facultyStore';
 import { useAuthStore } from '../../store/authStore';
-import { useAppTheme } from '../../hooks';
-import { spacing, typography} from '../../theme';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
+import { colors } from '../../theme/colors';
 
-// iOS 6 Components
-import { LinenBackground } from '../../components/ios6/LinenBackground';
-import { GlossyNavBar } from '../../components/ios6/GlossyNavBar';
+// Modern Components
+import { ScreenBackground, ModernNavBar, Card } from '../../components/common';
 import { StatCard } from '../../components/faculty/StatCard';
-import { AppIcon } from '../../components/ios6/AppIcon';
-import { GlossyCard } from '../../components/ios6/GlossyCard';
+import { QuickAction } from '../../components/faculty/QuickAction';
 
 type DashboardNavigationProp = NativeStackNavigationProp<any>;
 
 export const DashboardScreen = () => {
     const navigation = useNavigation<DashboardNavigationProp>();
-    const { colors } = useAppTheme();
     const { user } = useAuthStore();
     const {
         stats,
@@ -51,12 +49,12 @@ export const DashboardScreen = () => {
     };
 
     return (
-        <LinenBackground>
-            <GlossyNavBar
+        <ScreenBackground>
+            <ModernNavBar
                 title="Dashboard"
                 rightButton={
                     <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
-                        <Ionicons name="settings-sharp" size={24} color="#fff" style={styles.settingsIcon} />
+                        <Ionicons name="settings-outline" size={24} color={colors.primary} />
                     </TouchableOpacity>
                 }
             />
@@ -64,7 +62,7 @@ export const DashboardScreen = () => {
             <ScrollView
                 style={styles.container}
                 refreshControl={
-                    <RefreshControl refreshing={isLoading} onRefresh={onRefresh} tintColor="#333" />
+                    <RefreshControl refreshing={isLoading} onRefresh={onRefresh} />
                 }
                 contentContainerStyle={styles.contentContainer}
             >
@@ -76,7 +74,7 @@ export const DashboardScreen = () => {
 
                 {/* Quick Stats */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>OVERVIEW</Text>
+                    {/* <Text style={styles.sectionTitle}>Overview</Text> */}
                     <View style={styles.statsRow}>
                         <View style={styles.statWrapper}>
                             <StatCard
@@ -92,38 +90,44 @@ export const DashboardScreen = () => {
                                 onPress={() => navigation.navigate('QuestionBank')}
                             />
                         </View>
+                    </View>
+                    <View style={[styles.statsRow, { marginTop: spacing.md }]}>
                         <View style={styles.statWrapper}>
                             <StatCard
                                 value={stats?.pendingReview || 0}
-                                label="Review"
+                                label="Pending Review"
                                 onPress={() => { }}
                             />
                         </View>
                     </View>
                 </View>
 
-                {/* Apps Grid */}
+                {/* Quick Actions Actions */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>QUICK ACTIONS</Text>
+                    <Text style={styles.sectionTitle}>Quick Actions</Text>
                     <View style={styles.iconGrid}>
-                        <AppIcon
+                        <QuickAction
                             title="Subjects"
-                            color={['#4A90E2', '#0056D2']}
+                            icon="book-outline"
+                            color={colors.blue}
                             onPress={() => navigation.navigate('Subjects')}
                         />
-                        <AppIcon
+                        <QuickAction
                             title="New Subject"
-                            color={['#50E3C2', '#2E8B73']}
-                            onPress={() => navigation.navigate('CreateSubject')}
+                            icon="add-circle-outline"
+                            color={colors.green}
+                            onPress={() => navigation.navigate('Subjects', { screen: 'AddSubject' })}
                         />
-                        <AppIcon
-                            title="Q-Bank"
-                            color={['#F5A623', '#D08906']}
-                            onPress={() => navigation.navigate('QuestionBank')}
+                        <QuickAction
+                            title="Quick Gen"
+                            icon="flash-outline"
+                            color={colors.orange}
+                            onPress={() => navigation.navigate('QuickGenerate')}
                         />
-                        <AppIcon
+                        <QuickAction
                             title="Rubrics"
-                            color={['#9013FE', '#5B08A5']}
+                            icon="list-outline"
+                            color={colors.purple}
                             onPress={() => navigation.navigate('Rubrics')}
                         />
                     </View>
@@ -131,9 +135,9 @@ export const DashboardScreen = () => {
 
                 {/* Recent Activity */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>RECENT ACTIVITY</Text>
+                    <Text style={styles.sectionTitle}>Recent Activity</Text>
                     {recentActivity && recentActivity.length > 0 ? (
-                        <GlossyCard>
+                        <Card>
                             {recentActivity.map((activity, index) => (
                                 <View
                                     key={activity.id || index}
@@ -148,9 +152,10 @@ export const DashboardScreen = () => {
                                             {activity.subject ? `${activity.subject} • ` : ''}{formatTimestamp(activity.timestamp)}
                                         </Text>
                                     </View>
+                                    <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
                                 </View>
                             ))}
-                        </GlossyCard>
+                        </Card>
                     ) : (
                         <View style={styles.emptyState}>
                             <Text style={styles.emptyText}>No recent activity</Text>
@@ -160,7 +165,7 @@ export const DashboardScreen = () => {
 
                 <View style={styles.bottomSpacer} />
             </ScrollView>
-        </LinenBackground>
+        </ScreenBackground>
     );
 };
 
@@ -172,79 +177,63 @@ const styles = StyleSheet.create({
         paddingBottom: spacing.xl,
     },
     header: {
-        padding: spacing.lg,
-        paddingBottom: spacing.md,
+        padding: spacing.screenHorizontal,
+        paddingTop: spacing.md,
+        paddingBottom: spacing.lg,
     },
     greeting: {
-        fontSize: 18,
-        color: '#4C566C',
-        fontWeight: '500',
-        textShadowColor: 'rgba(255,255,255,0.5)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 0,
+        ...typography.body,
+        color: colors.textSecondary,
+        marginBottom: 2,
     },
     username: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#000',
-        marginTop: 4,
-        textShadowColor: 'rgba(255,255,255,0.5)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 0,
-    },
-    settingsIcon: {
-        textShadowColor: 'rgba(0,0,0,0.5)',
-        textShadowOffset: { width: 0, height: -1 },
-        textShadowRadius: 0,
+        ...typography.h1,
+        color: colors.text,
     },
     section: {
         marginTop: spacing.lg,
-        paddingHorizontal: spacing.md,
+        paddingHorizontal: spacing.screenHorizontal,
     },
     sectionTitle: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        color: '#4C566C',
-        marginBottom: spacing.xs,
-        marginLeft: spacing.xs,
-        textShadowColor: 'rgba(255,255,255,0.5)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 0,
+        ...typography.headline, // Section header style
+        color: colors.text,
+        marginBottom: spacing.md,
+        marginLeft: 4,
     },
     statsRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginHorizontal: -spacing.xs,
+        gap: spacing.md,
     },
     statWrapper: {
         flex: 1,
-        paddingHorizontal: spacing.xs,
     },
     iconGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        justifyContent: 'flex-start',
-        marginHorizontal: -10, // Compensate for icon margins
+        marginHorizontal: -spacing.xs, // Compensate for item padding if needed
     },
     activityItem: {
-        padding: spacing.md,
-        backgroundColor: 'white',
+        paddingVertical: spacing.md,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     borderBottom: {
-        borderBottomWidth: 1,
-        borderBottomColor: '#E5E5EA',
+        borderBottomWidth: 0.5,
+        borderBottomColor: colors.separator,
     },
     activityContent: {
         flex: 1,
+        paddingRight: spacing.sm,
     },
     activityDesc: {
-        fontSize: 16,
-        color: '#000',
+        ...typography.body,
+        fontSize: 15,
+        color: colors.text,
         marginBottom: 4,
     },
     activityMeta: {
-        fontSize: 13,
-        color: '#8E8E93',
+        ...typography.caption1,
+        color: colors.textSecondary,
     },
     emptyState: {
         padding: spacing.xl,
@@ -252,8 +241,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     emptyText: {
-        color: '#8E8E93',
-        fontSize: 16,
+        ...typography.body,
+        color: colors.textTertiary,
     },
     bottomSpacer: {
         height: 40,

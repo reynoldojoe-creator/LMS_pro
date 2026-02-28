@@ -1,13 +1,20 @@
 // Configuration for API endpoints and settings
-// Auto-detected IP address: 10.134.103.242
+import Constants from 'expo-constants';
+
+// Auto-detect the dev machine's IP from Expo so it works on any network
+const getDevBaseUrl = (): string => {
+    const debuggerHost = Constants.expoConfig?.hostUri || Constants.manifest2?.extra?.expoGo?.debuggerHost;
+    if (debuggerHost) {
+        const ip = debuggerHost.split(':')[0]; // strip the metro port
+        return `http://${ip}:8000`;
+    }
+    return 'http://localhost:8000'; // fallback for simulators
+};
 
 export const API_CONFIG = {
-    // For Expo Go on physical device, use computer's local IP
-    // Run `ipconfig` (Windows) or `ifconfig` (Mac/Linux) to find it
+    // Auto-detected from Expo — no manual IP changes needed!
     BASE_URL: __DEV__
-        ? 'http://localhost:8000'  // Use localhost for iOS Simulator
-        // ? 'http://10.0.2.2:8000' // Use this for Android Emulator
-        // ? 'http://[YOUR_IP]:8000' // Use this for Physical Device
+        ? getDevBaseUrl()
         : 'https://production-url.com',
 
     TIMEOUTS: {

@@ -32,30 +32,46 @@ class LLMService:
             'num_thread': config.OLLAMA_NUM_THREAD,
             'num_ctx': config.OLLAMA_CONTEXT_SIZE,
         }
-        
-        # Add format if specified (e.g. "json")
-        if format:
-            options['format'] = format
+
+        # For JSON requests with qwen models, disable thinking mode
+        # This covers qwen2.5, qwen3, and any future qwen variants
+        actual_prompt = prompt
+        if format == "json" and "qwen" in (model or "").lower():
+            actual_prompt = prompt + "\n/no_think"
 
         for attempt in range(3):
             try:
-                # We use asyncio.wait_for for timeout since Ollama client might not support it directly per request
                 response = await asyncio.wait_for(
                     self.client.generate(
                         model=model,
-                        prompt=prompt,
+                        prompt=actual_prompt,
                         options=options,
-                        format=format, # Pass format to generate call
+                        format=format,
                         stream=False
                     ),
                     timeout=timeout
                 )
-                return response['response']
+                raw = response['response']
+                # Strip any residual <think>...</think> tags (closed or unclosed)
+                cleaned = re.sub(r'<think>[\s\S]*?</think>', '', raw)
+                # Also handle unclosed <think> (model ran out of tokens mid-thinking)
+                cleaned = re.sub(r'<think>[\s\S]*$', '', cleaned)
+                cleaned = cleaned.strip()
+                
+                if not cleaned and raw:
+                    logger.warning(f"Response was entirely thinking block ({len(raw)} chars). Stripping failed.")
+                    # Try to extract JSON from inside the thinking block as last resort
+                    json_in_think = re.search(r'\{[\s\S]*\}', raw)
+                    if json_in_think:
+                        cleaned = json_in_think.group(0)
+                        logger.info(f"Recovered JSON from thinking block ({len(cleaned)} chars)")
+                
+                return cleaned
             except asyncio.TimeoutError:
                 logger.warning(f"Timeout querying {model} (attempt {attempt+1}/3)")
                 if attempt == 2:
                     raise
-                await asyncio.sleep(2 ** attempt) # Exponential backoff
+                await asyncio.sleep(2 ** attempt)
             except Exception as e:
                 logger.error(f"Error querying {model}: {e}")
                 if attempt == 2:
@@ -81,9 +97,6 @@ class LLMService:
         model = model or self.primary_model
         
         try:
-            # Check capabilities
-            # (Simplified for now)
-
             text = await self.query(
                 prompt=prompt,
                 model=model,
@@ -94,12 +107,15 @@ class LLMService:
             )
             
             if expect_json:
+                if not text:
+                    logger.error(f"Empty response from {model} — cannot parse JSON")
+                    return {"questions": []}
                 return self._parse_json_response(text)
             return {"text": text}
             
         except Exception as e:
             logger.error(f"Generation failed with {model}: {e}")
-            if retry_on_fail and model != self.fallback_model:
+            if retry_on_fail and model != self.fallback_model and self.fallback_model != self.primary_model:
                 logger.info(f"Retrying with fallback model: {self.fallback_model}")
                 return await self.generate(
                     prompt=prompt,
@@ -119,8 +135,20 @@ class LLMService:
         - JSON in code blocks
         - Partial JSON with trailing text
         - Common formatting errors
+        - Truncated JSON (close open brackets/braces)
+        - Qwen3 <think> tags (shouldn't reach here but just in case)
         """
         original_text = text
+        
+        # Extra safety: strip any residual <think> tags
+        text = re.sub(r'<think>[\s\S]*?</think>', '', text)
+        text = re.sub(r'<think>[\s\S]*$', '', text)
+        text = text.strip()
+        
+        if not text:
+            logger.error(f"Empty text after cleaning. Original ({len(original_text)} chars): {original_text[:300]}...")
+            return {"questions": []}
+        
         # Try to find JSON in code blocks
         json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', text)
         if json_match:
@@ -147,8 +175,60 @@ class LLMService:
                 text = re.sub(r'//.*', '', text)
                 return json.loads(text)
             except json.JSONDecodeError:
+                # Attempt truncated JSON repair
+                repaired = self._repair_truncated_json(text)
+                if repaired is not None:
+                    logger.info("Recovered partial JSON from truncated LLM output")
+                    return repaired
                 logger.error(f"Failed to parse JSON. Raw text: {original_text[:200]}...")
                 raise
+
+    def _repair_truncated_json(self, text: str) -> Optional[Dict]:
+        """
+        Attempt to repair truncated JSON by finding the last complete question
+        object and discarding any trailing incomplete data.
+        Returns parsed dict or None if repair fails.
+        """
+        try:
+            # Find the start of JSON
+            start = text.find('{')
+            if start == -1:
+                return None
+            text = text[start:]
+
+            # Strategy: find the last complete "}" that closes a question object
+            # by searching for `}, {` or `}]` patterns from right to left
+            # and trimming everything after the last complete object.
+
+            # Find all positions of `}` that could end a question object
+            brace_positions = [i for i, c in enumerate(text) if c == '}']
+
+            # Try from the last `}` backwards, attempting to close the outer structure
+            for pos in reversed(brace_positions):
+                candidate = text[:pos + 1]
+
+                # Close any remaining open brackets/braces
+                open_braces = candidate.count('{') - candidate.count('}')
+                open_brackets = candidate.count('[') - candidate.count(']')
+
+                # Remove trailing comma before closing
+                candidate = candidate.rstrip().rstrip(',')
+
+                candidate += ']' * max(0, open_brackets)
+                candidate += '}' * max(0, open_braces)
+
+                try:
+                    result = json.loads(candidate)
+                    if isinstance(result, dict) and 'questions' in result:
+                        questions = result['questions']
+                        if isinstance(questions, list) and len(questions) > 0:
+                            return result
+                except json.JSONDecodeError:
+                    continue
+
+            return None
+        except Exception:
+            return None
 
     async def check_model_available(self, model: str) -> bool:
         """Check if model is available in Ollama"""

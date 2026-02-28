@@ -67,7 +67,7 @@ export interface Question {
     status: 'pending' | 'approved' | 'rejected' | 'quarantined';
     createdAt: string;
     validationScore?: number;
-    ragContext?: string[];
+    ragContext?: any; // Structured: {context: [], reasoning: ""} or legacy string[]
     rag_context?: string[] | string;
     topicCOs?: string[];
     topicLOs?: string[];
@@ -93,6 +93,15 @@ export interface RubricSection {
 }
 
 
+
+export interface BloomDistribution {
+    remember: number;
+    understand: number;
+    apply: number;
+    analyze: number;
+    evaluate: number;
+    create: number;
+}
 
 export interface DifficultyDistribution {
     easy: number;
@@ -149,6 +158,8 @@ export interface VettingBatch {
     dueDate?: string;
     status: 'pending' | 'in_progress' | 'completed';
     questions: Question[];
+    subjectCOs?: Array<{ id: number; code: string; description: string }>;
+    subjectLOs?: Array<{ id: number; code: string; description: string }>;
 }
 
 export interface VetterStats {

@@ -24,6 +24,7 @@ interface QuickGenerateParams {
     difficulty: 'easy' | 'medium' | 'hard';
     count: number;
     coMapping?: string[];
+    bloomLevel?: string;
 }
 
 interface GenerationResult {
@@ -79,12 +80,13 @@ interface FacultyState {
     updateUnit: (subjectId: string, unitId: string, title: string) => Promise<void>;
     updateTopic: (subjectId: string, topicId: string, name: string) => Promise<void>;
     createTopic: (subjectId: string, name: string) => Promise<any>;
-    mapTopicOutcomes: (subjectId: string, topicId: string, coIds: string[], loIds: string[]) => Promise<void>;
+    mapTopicOutcomes: (subjectId: string, topicId: string, coMappings: { co_id: number, weight: string }[], loIds: string[]) => Promise<void>;
     trainTopicModel: (subjectId: string, topicId: string, sampleFileIds?: string[]) => Promise<any>;
     pollTrainingStatus: (jobId: string) => Promise<any>;
     fetchTopicFiles: (subjectId: string, topicId: string) => Promise<any[]>;
     fetchTopicSampleFiles: (subjectId: string, topicId: string) => Promise<any[]>;
-    bulkMapCOTopics: (subjectId: string, coId: string, topicIds: string[], weight: string) => Promise<void>;
+    deleteTopicFile: (subjectId: string, topicId: string, fileType: string, fileName: string) => Promise<void>;
+    bulkMapCOTopics: (subjectId: string, coId: string, topicMappings: { topic_id: number; weight: string }[]) => Promise<void>;
     autoSuggestCOTopics: (subjectId: string, coId: string) => Promise<any>;
     bulkMapLOTopics: (subjectId: string, loId: string, topicIds: string[], weight: string) => Promise<void>;
     autoSuggestLOTopics: (subjectId: string, loId: string) => Promise<any>;
@@ -233,7 +235,7 @@ export const useFacultyStore = create<FacultyState>((set, get) => ({
                 // Also update currentSubject if it matches
                 const updatedCurrent = state.currentSubject?.id === subjectId
                     ? updatedSubjects.find(s => s.id === subjectId) || state.currentSubject
-        : state.currentSubject;
+                    : state.currentSubject;
 
                 return { subjects: updatedSubjects, currentSubject: updatedCurrent };
             });
@@ -310,7 +312,8 @@ export const useFacultyStore = create<FacultyState>((set, get) => ({
                 topic_id: parseInt(params.topicId),
                 question_type: params.questionType,
                 count: params.count,
-                difficulty: params.difficulty
+                difficulty: params.difficulty,
+                bloom_level: params.bloomLevel
             };
 
             const response = await api.post(
@@ -555,6 +558,7 @@ export const useFacultyStore = create<FacultyState>((set, get) => ({
 
             await api.post(API_CONFIG.ENDPOINTS.UPLOAD_NOTES(subjectId, topicId), formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
+                timeout: API_CONFIG.TIMEOUTS.UPLOAD || 120000,
             });
 
             await get().fetchTopicDetail(subjectId, topicId);
@@ -610,11 +614,11 @@ export const useFacultyStore = create<FacultyState>((set, get) => ({
         }
     },
 
-    mapTopicOutcomes: async (subjectId: string, topicId: string, coIds: string[], loIds: string[]) => {
+    mapTopicOutcomes: async (subjectId: string, topicId: string, coMappings: { co_id: number, weight: string }[], loIds: string[]) => {
         set({ isLoadingSubjects: true, error: null });
         try {
             await api.post(API_CONFIG.ENDPOINTS.TOPIC_MAP_OUTCOMES(subjectId, topicId), {
-                co_ids: coIds,
+                co_mappings: coMappings,
                 lo_ids: loIds
             });
             // Refresh topic details to show new mappings
@@ -681,13 +685,23 @@ export const useFacultyStore = create<FacultyState>((set, get) => ({
         }
     },
 
+    deleteTopicFile: async (subjectId: string, topicId: string, fileType: string, fileName: string) => {
+        try {
+            await api.delete(`/subjects/${subjectId}/topics/${topicId}/files/${fileType}/${encodeURIComponent(fileName)}`);
+            // Refresh topic files
+            get().fetchTopicDetail(subjectId, topicId);
+        } catch (error: any) {
+            console.error("Failed to delete topic file", error);
+            throw error;
+        }
+    },
+
     // CO Bulk Mapping Actions
-    bulkMapCOTopics: async (subjectId: string, coId: string, topicIds: string[], weight: string) => {
+    bulkMapCOTopics: async (subjectId: string, coId: string, topicMappings: { topic_id: number; weight: string }[]) => {
         set({ isLoadingSubjects: true, error: null });
         try {
             await api.post(`/subjects/${subjectId}/cos/${coId}/map-topics`, {
-                topic_ids: topicIds.map(id => parseInt(id)),
-                weight
+                topic_mappings: topicMappings
             });
             // Refresh subject to show new mappings
             await get().fetchSubjectDetail(subjectId);

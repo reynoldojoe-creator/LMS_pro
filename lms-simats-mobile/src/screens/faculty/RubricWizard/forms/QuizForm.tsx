@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useFormContext, Controller } from 'react-hook-form';
-import { colors, typography, spacing } from '../../../../theme';
-import { Card, Button, Input } from '../../../../components/common';
+import { colors } from '../../../../theme/colors';
+import { typography } from '../../../../theme/typography';
+import { spacing } from '../../../../theme/spacing';
+import { Card, ModernButton, Input, SegmentedControl } from '../../../../components/common';
 import { TopicSelector } from '../components/TopicSelector';
-import { SegmentedControl } from '../../../../components/common/SegmentedControl'; // Make sure this exists or use simpler mock
 
 interface Props {
     subject: any;
@@ -92,28 +93,11 @@ export const QuizForm = ({ subject, onSubmit }: Props) => {
                     defaultValue="mcq"
                     render={({ field: { value, onChange } }) => (
                         <View style={styles.segmentContainer}>
-                            {/* Simple custom segmented control replacement since component might not exist */}
-                            <View style={{ flexDirection: 'row', marginBottom: spacing.md }}>
-                                {['mcq', 'short_answer'].map((type) => (
-                                    <Text
-                                        key={type}
-                                        onPress={() => onChange(type)}
-                                        style={{
-                                            flex: 1,
-                                            textAlign: 'center',
-                                            padding: 10,
-                                            backgroundColor: value === type ? colors.primary : colors.surface,
-                                            color: value === type ? '#FFFFFF' : colors.textPrimary,
-                                            borderWidth: 1,
-                                            borderColor: colors.divider,
-                                            overflow: 'hidden',
-                                            borderRadius: 8
-                                        }}
-                                    >
-                                        {type === 'mcq' ? 'MCQ' : 'Short Answer'}
-                                    </Text>
-                                ))}
-                            </View>
+                            <SegmentedControl
+                                segments={['MCQ', 'Short Answer']}
+                                selectedIndex={value === 'mcq' ? 0 : 1}
+                                onChange={(index) => onChange(index === 0 ? 'mcq' : 'short_answer')}
+                            />
                         </View>
                     )}
                 />
@@ -121,7 +105,7 @@ export const QuizForm = ({ subject, onSubmit }: Props) => {
 
             </Card>
 
-            <Button
+            <ModernButton
                 title="Create Quiz"
                 onPress={onSubmit}
                 variant="primary"

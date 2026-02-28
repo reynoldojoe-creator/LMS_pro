@@ -1,26 +1,26 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { typography, spacing} from '../../theme';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
+import { colors } from '../../theme/colors';
 import { useAuthStore } from '../../store';
-import { useAppTheme } from '../../hooks';
+import { ScreenBackground } from '../../components/common';
+import { borderRadius } from '../../theme/spacing';
 
 export const RoleSelectScreen = () => {
     const { setCurrentRole } = useAuthStore();
-    const { colors } = useAppTheme();
-    const styles = getStyles(colors);
 
     const handleSelectRole = (role: 'faculty' | 'vetter') => {
         setCurrentRole(role);
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <ScreenBackground>
             <View style={styles.content}>
                 {/* Branding */}
                 <View style={styles.header}>
-                    <View style={styles.logoPlaceholder}>
-                        <Text style={styles.logoText}>📚</Text>
+                    <View style={styles.iconContainer}>
+                        <Text style={styles.logoIcon}>📚</Text>
                     </View>
                     <Text style={styles.appName}>LMS - SIMATS</Text>
                 </View>
@@ -32,80 +32,72 @@ export const RoleSelectScreen = () => {
                     <TouchableOpacity
                         style={styles.roleCard}
                         onPress={() => handleSelectRole('faculty')}
-                        activeOpacity={0.8}
+                        activeOpacity={0.7}
                     >
-                        <Text style={styles.roleIcon}>👨‍🏫</Text>
-                        <Text style={styles.roleTitle}>Faculty</Text>
-                        <Text style={styles.roleDescription}>
-                            Create rubrics, generate questions, and manage subjects
-                        </Text>
+                        <View style={styles.roleIconBg}>
+                            <Text style={styles.roleIcon}>👨‍🏫</Text>
+                        </View>
+                        <View style={styles.roleTextContainer}>
+                            <Text style={styles.roleTitle}>Faculty</Text>
+                            <Text style={styles.roleDescription}>
+                                Create rubrics, generate questions, and manage subjects.
+                            </Text>
+                        </View>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         style={styles.roleCard}
                         onPress={() => handleSelectRole('vetter')}
-                        activeOpacity={0.8}
+                        activeOpacity={0.7}
                     >
-                        <Text style={styles.roleIcon}>✅</Text>
-                        <Text style={styles.roleTitle}>Vetter</Text>
-                        <Text style={styles.roleDescription}>
-                            Review, approve, or reject generated questions
-                        </Text>
+                        <View style={[styles.roleIconBg, { backgroundColor: '#E8F5E9' }]}>
+                            <Text style={styles.roleIcon}>✅</Text>
+                        </View>
+                        <View style={styles.roleTextContainer}>
+                            <Text style={styles.roleTitle}>Vetter</Text>
+                            <Text style={styles.roleDescription}>
+                                Review, approve, or reject generated questions.
+                            </Text>
+                        </View>
                     </TouchableOpacity>
                 </View>
             </View>
-        </SafeAreaView>
+        </ScreenBackground>
     );
 };
 
-const getStyles = (colors: any) => StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.background,
-    },
+const styles = StyleSheet.create({
     content: {
         flex: 1,
-        padding: spacing.lg,
+        padding: spacing.screenHorizontal,
         justifyContent: 'center',
+        maxWidth: 500,
+        alignSelf: 'center',
+        width: '100%',
     },
     header: {
         alignItems: 'center',
         marginBottom: spacing.xl,
     },
-    logoPlaceholder: {
-        width: 100,
-        height: 100,
+    iconContainer: {
+        width: 80,
+        height: 80,
         borderRadius: 20,
-        backgroundColor: colors.surface,
+        backgroundColor: colors.systemGray6,
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: spacing.md,
-        shadowColor: colors.shadowDark,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 5,
-        elevation: 5,
-        borderWidth: 1,
-        borderColor: colors.border,
     },
-    logoText: {
-        fontSize: 56,
+    logoIcon: {
+        fontSize: 40,
     },
     appName: {
-        ...typography.h1,
-        fontSize: 28,
-        color: colors.textPrimary,
+        ...typography.h2,
+        color: colors.text,
         marginBottom: spacing.xs,
-    },
-    subtitle: {
-        ...typography.body,
-        fontSize: 16,
-        color: colors.textSecondary,
-        textAlign: 'center',
     },
     prompt: {
         ...typography.body,
-        fontSize: 17,
         color: colors.textSecondary,
         textAlign: 'center',
         marginBottom: spacing.lg,
@@ -114,32 +106,45 @@ const getStyles = (colors: any) => StyleSheet.create({
         gap: spacing.md,
     },
     roleCard: {
-        backgroundColor: colors.surface,
-        padding: spacing.lg,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: colors.border,
+        backgroundColor: colors.card,
+        padding: spacing.md,
+        borderRadius: borderRadius.lg,
+        flexDirection: 'row',
         alignItems: 'center',
-        shadowColor: colors.shadowDark,
+
+        // Shadow
+        shadowColor: colors.shadow,
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.03)',
+    },
+    roleIconBg: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: '#E3F2FD',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: spacing.md,
     },
     roleIcon: {
-        fontSize: 40,
-        marginBottom: spacing.sm,
+        fontSize: 24,
+    },
+    roleTextContainer: {
+        flex: 1,
     },
     roleTitle: {
-        ...typography.h2,
-        fontSize: 20,
-        color: colors.textPrimary,
-        marginBottom: spacing.xs,
+        ...typography.headline,
+        color: colors.text,
+        marginBottom: 2,
     },
     roleDescription: {
-        ...typography.caption,
-        fontSize: 14,
+        ...typography.caption1,
         color: colors.textSecondary,
-        textAlign: 'center',
+        lineHeight: 16,
     },
 });

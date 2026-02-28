@@ -14,14 +14,33 @@ class ReportsService:
         """
         Get high-level statistics: generated, approved, rejected, pending.
         """
-        query = db.query(vetting_models.GeneratedQuestion)
+        # Query both tables: GeneratedQuestion (Vetting) and Question (Quick Gen)
+        
+        # 1. GeneratedQuestion (Vetting flow)
+        q_gen = db.query(vetting_models.GeneratedQuestion)
         if subject_id:
-            query = query.join(database.GeneratedBatch).filter(database.GeneratedBatch.subject_id == subject_id)
+            q_gen = q_gen.join(database.GeneratedBatch).filter(database.GeneratedBatch.subject_id == subject_id)
             
-        total_questions = query.count()
-        approved = query.filter(vetting_models.GeneratedQuestion.status == "approved").count()
-        rejected = query.filter(vetting_models.GeneratedQuestion.status == "rejected").count()
-        pending = query.filter(vetting_models.GeneratedQuestion.status == "pending").count()
+        gen_total = q_gen.count()
+        gen_approved = q_gen.filter(vetting_models.GeneratedQuestion.status == "approved").count()
+        gen_rejected = q_gen.filter(vetting_models.GeneratedQuestion.status == "rejected").count()
+        gen_pending = q_gen.filter(vetting_models.GeneratedQuestion.status == "pending").count()
+
+        # 2. Question (Quick Gen flow)
+        q_quick = db.query(database.Question)
+        if subject_id:
+            q_quick = q_quick.filter(database.Question.subject_id == subject_id)
+            
+        quick_total = q_quick.count()
+        quick_approved = q_quick.filter(database.Question.status == "approved").count()
+        quick_rejected = q_quick.filter(database.Question.status == "rejected").count()
+        quick_pending = q_quick.filter(database.Question.status == "pending").count()
+
+        # Aggregate
+        total_questions = gen_total + quick_total
+        approved = gen_approved + quick_approved
+        rejected = gen_rejected + quick_rejected
+        pending = gen_pending + quick_pending
         
         # Calculate approval rate based on reviewed questions
         reviewed = approved + rejected

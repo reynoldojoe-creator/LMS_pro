@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 // Force IDE refresh
 import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
-import { colors, typography, spacing} from '../../theme';
+import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
 import { Button } from '../../components/common';
 
 interface Props {

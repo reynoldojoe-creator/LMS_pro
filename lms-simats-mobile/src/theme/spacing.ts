@@ -6,25 +6,24 @@ export const spacing = {
     xl: 32,
     xxl: 48,
 
-    // iOS 6 Specifics
-    iosHeaderHeight: 44,
-    iosHeaderPaddingTop: 44, // For status bar overlap if needed
-    cornerRadius: 10,
-    glossHeight: 0.5, // Percentage for gloss overlay
-
-    // Screen padding
+    // Layout
+    gutter: 16, // Standard horizontal margin
     screenHorizontal: 16,
     screenVertical: 16,
 
-    // Card padding
+    // Components
     cardPadding: 16,
-
-    // List items
     listItemVertical: 12,
     listItemHorizontal: 16,
 
-    // iOS specific
-    sectionGap: 35,  // Gap between grouped sections (like iOS Settings)
+    // iOS Specifics
+    iosHeaderHeight: 44,
+    iosHeaderPaddingTop: 44, // Safe area top approximation
+    cornerRadius: 12, // Modern rounded corners
+
+    // Grouped Views
+    sectionGap: 24,
+    groupHeaderHeight: 40,
 };
 
 export const borderRadius = {

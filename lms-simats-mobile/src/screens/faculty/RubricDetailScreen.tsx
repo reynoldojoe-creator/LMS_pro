@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { colors, typography, spacing } from '../../theme';
+import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
 import { useRubricStore, useFacultyStore } from '../../store';
-import { LinenBackground, GlossyNavBar, GlossyCard, GlossyButton } from '../../components/ios6';
+import { ScreenBackground, ModernNavBar, Card, ModernButton } from '../../components/common';
 import { Ionicons } from '@expo/vector-icons';
 
 type Props = NativeStackScreenProps<any, 'RubricDetail'>;
@@ -18,16 +20,30 @@ export const RubricDetailScreen = ({ route, navigation }: Props) => {
 
     if (!rubric) {
         return (
-            <LinenBackground>
-                <GlossyNavBar title="Rubric Detail" showBack onBack={() => navigation.goBack()} />
+            <ScreenBackground>
+                <ModernNavBar title="Rubric Detail" showBack onBack={() => navigation.goBack()} />
                 <View style={styles.center}>
                     <Text>Rubric not found</Text>
                 </View>
-            </LinenBackground>
+            </ScreenBackground>
         );
     }
 
-    const subject = subjects.find(s => s.id === rubric.subjectId);
+    // Find subject data
+    const subject = subjects.find(s => String(s.id) === String(rubric.subjectId));
+
+    // Fix: Use subjectName from rubric if available (backend sends it), or fallback to store lookup
+    const subjectDisplayName = (rubric as any).subjectName
+        || (subject ? `${subject.code} - ${subject.name}` : null)
+        || 'Unknown Subject';
+
+    // Fetch subjects if not loaded (fixes issue where subject is unknown if navigated directly)
+    React.useEffect(() => {
+        if (subjects.length === 0) {
+            useFacultyStore.getState().fetchSubjects();
+        }
+    }, []);
+
     const s = rubric.sections;
     const totalQuestions = !s ? 0
         : Array.isArray(s) ? s.reduce((sum, item) => sum + (item.count || 0), 0)
@@ -39,13 +55,16 @@ export const RubricDetailScreen = ({ route, navigation }: Props) => {
     };
 
     const handleGenerate = async () => {
+        console.log('[DEBUG] handleGenerate clicked, isGenerating:', isGenerating);
         if (isGenerating) return;
 
         setIsGenerating(true);
         try {
+            console.log(`[DEBUG] Calling generateFromRubric for rubricId: ${rubric.id}`);
             const questions = await generateFromRubric(rubric.id);
+            console.log(`[DEBUG] generateFromRubric succeeded, got ${questions.length} questions`);
             setIsGenerating(false);
-            navigation.navigate('GenerationResults', { generatedQuestions: questions });
+            navigation.navigate('GenerationResults', { generatedQuestions: questions, rubricId: rubric.id });
         } catch (error: any) {
             setIsGenerating(false);
             Alert.alert(
@@ -69,8 +88,8 @@ export const RubricDetailScreen = ({ route, navigation }: Props) => {
                 : [];
 
     return (
-        <LinenBackground>
-            <GlossyNavBar
+        <ScreenBackground>
+            <ModernNavBar
                 title="Rubric Details"
                 showBack
                 onBack={() => navigation.goBack()}
@@ -83,10 +102,10 @@ export const RubricDetailScreen = ({ route, navigation }: Props) => {
 
             <ScrollView contentContainerStyle={styles.content}>
                 {/* Rubric Info */}
-                <GlossyCard title="Overview">
+                <Card title="Overview" style={styles.card}>
                     <Text style={styles.title}>{rubric.title}</Text>
                     <Text style={styles.subject}>
-                        {subject ? `${subject.code} - ${subject.name}` : 'Unknown Subject'}
+                        {subjectDisplayName}
                     </Text>
 
                     <View style={styles.statsRow}>
@@ -105,12 +124,12 @@ export const RubricDetailScreen = ({ route, navigation }: Props) => {
                             <Text style={styles.statLabel}>Questions</Text>
                         </View>
                     </View>
-                </GlossyCard>
+                </Card>
 
                 {/* Sections */}
                 <Text style={styles.sectionHeader}>QUESTION DISTRIBUTION</Text>
                 {sectionsArr.map((section: any, index: number) => (
-                    <GlossyCard key={section.id || section.type || index}>
+                    <Card key={section.id || section.type || index} style={styles.card}>
                         <View style={styles.sectionHeaderRow}>
                             <Text style={styles.sectionName}>
                                 Section {String.fromCharCode(65 + index)}: {(section.type || '').toUpperCase()}
@@ -127,7 +146,7 @@ export const RubricDetailScreen = ({ route, navigation }: Props) => {
                                 Choice: {section.choice.replace('_', ' ')}
                             </Text>
                         )}
-                    </GlossyCard>
+                    </Card>
                 ))}
 
                 {/* Actions */}
@@ -140,9 +159,10 @@ export const RubricDetailScreen = ({ route, navigation }: Props) => {
                                     <Text style={styles.loadingText}>Generating questions...</Text>
                                 </View>
                             ) : (
-                                <GlossyButton
+                                <ModernButton
                                     title="Generate Questions"
                                     onPress={handleGenerate}
+                                    variant="primary"
                                     style={{ marginBottom: 20 }}
                                 />
                             )}
@@ -153,9 +173,10 @@ export const RubricDetailScreen = ({ route, navigation }: Props) => {
                             <Text style={styles.generatedText}>
                                 ✓ Generated on {rubric.generatedAt ? new Date(rubric.generatedAt).toLocaleDateString() : 'Unknown Date'}
                             </Text>
-                            <GlossyButton
+                            <ModernButton
                                 title="View Generated Questions"
                                 onPress={handleViewResults}
+                                variant="secondary"
                                 style={{ marginTop: 10 }}
                             />
                         </>
@@ -164,7 +185,7 @@ export const RubricDetailScreen = ({ route, navigation }: Props) => {
 
                 <View style={{ height: 40 }} />
             </ScrollView>
-        </LinenBackground>
+        </ScreenBackground>
     );
 };
 
@@ -175,12 +196,9 @@ const styles = StyleSheet.create({
         paddingTop: spacing.md,
     },
     navText: {
-        color: 'white',
-        fontWeight: 'bold',
-        fontSize: 16,
-        textShadowColor: 'rgba(0,0,0,0.5)',
-        textShadowOffset: { width: 0, height: -1 },
-        textShadowRadius: 0,
+        color: colors.primary,
+        fontWeight: '600',
+        fontSize: 17,
     },
     title: {
         ...typography.h2,
@@ -274,5 +292,8 @@ const styles = StyleSheet.create({
     loadingText: {
         marginLeft: 10,
         color: '#555',
+    },
+    card: {
+        marginBottom: spacing.md,
     }
 });

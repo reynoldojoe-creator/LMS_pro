@@ -85,6 +85,22 @@ Respond in JSON format:
         
         db.commit()
     
+    def bulk_map_with_weights(self, db: Session, co_id: int, topic_mappings: list):
+        """Map multiple topics to a CO with per-topic weights. Replaces all existing mappings for this CO."""
+        # Clear all existing mappings for this CO
+        db.query(TopicCOMapping).filter_by(course_outcome_id=co_id).delete()
+        
+        # Insert new mappings with individual weights
+        for mapping in topic_mappings:
+            new_mapping = TopicCOMapping(
+                topic_id=mapping.topic_id,
+                course_outcome_id=co_id,
+                weight=mapping.weight
+            )
+            db.add(new_mapping)
+        
+        db.commit()
+    
     def remove_mapping(self, db: Session, co_id: int, topic_id: int):
         db.query(TopicCOMapping).filter_by(topic_id=topic_id, course_outcome_id=co_id).delete()
         db.commit()

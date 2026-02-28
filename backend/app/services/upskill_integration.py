@@ -9,7 +9,7 @@ from typing import List, Dict, Any, Optional
 UPSKILL_AVAILABLE = False
 
 class LMSUpskillService:
-    def __init__(self, skills_dir="./backend/data/skills", runs_dir="./backend/data/runs"):
+    def __init__(self, skills_dir="./data/skills", runs_dir="./data/runs"):
         self.skills_dir = Path(skills_dir)
         self.runs_dir = Path(runs_dir)
         self.skills_dir.mkdir(parents=True, exist_ok=True)
@@ -27,7 +27,9 @@ class LMSUpskillService:
         sample_questions: List[Dict],
         notes_content: str,
         co_descriptions: List[str] = None,
-        lo_descriptions: List[str] = None
+        lo_descriptions: List[str] = None,
+        co_intensity_weights: Dict[str, float] = None,
+        lo_intensity_weights: Dict[str, float] = None
     ) -> Dict[str, Any]:
         """
         Creates a structured 'skill' profile for the topic.
@@ -40,6 +42,23 @@ class LMSUpskillService:
         # Build comprehensive skill instructions
         co_text = "\n".join([f'- {co}' for co in (co_descriptions or [])])
         lo_text = "\n".join([f'- {lo}' for lo in (lo_descriptions or [])])
+        
+        # Add vetter-validated intensity weights
+        co_intensity_section = ""
+        if co_intensity_weights:
+            sorted_cos = sorted(co_intensity_weights.items(), key=lambda x: x[1], reverse=True)
+            co_intensity_section = "\n## Vetter-Validated CO Intensity (from approved questions)\n"
+            for code, avg in sorted_cos:
+                label = "HIGH" if avg >= 2.5 else ("MODERATE" if avg >= 1.5 else "LOW")
+                co_intensity_section += f"- {code}: {avg}/3 — {label} priority (generate more questions targeting this CO)\n"
+
+        lo_intensity_section = ""
+        if lo_intensity_weights:
+            sorted_los = sorted(lo_intensity_weights.items(), key=lambda x: x[1], reverse=True)
+            lo_intensity_section = "\n## Vetter-Validated LO Intensity (from approved questions)\n"
+            for code, avg in sorted_los:
+                label = "HIGH" if avg >= 2.5 else ("MODERATE" if avg >= 1.5 else "LOW")
+                lo_intensity_section += f"- {code}: {avg}/3 — {label} priority\n"
 
         skill_content = f"""# Generation Instructions for: {topic_name}
 
@@ -52,7 +71,8 @@ Follow these instructions precisely.
 
 ## Learning Outcomes to Assess  
 {lo_text}
-
+{co_intensity_section}
+{lo_intensity_section}
 ## Question Style Guide (learned from {len(sample_questions)} examples)
 """
         
@@ -155,5 +175,6 @@ Follow these instructions precisely.
         """
         return await self.train_topic_skill(
             subject_id, topic_id, topic_name, sample_questions, 
-            notes_content, co_descriptions, lo_descriptions
+            notes_content, co_descriptions, lo_descriptions,
+            co_intensity_weights=None, lo_intensity_weights=None
         )

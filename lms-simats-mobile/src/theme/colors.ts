@@ -1,120 +1,164 @@
-// Light Theme (iOS 6 Style)
-export const colors = {
-    // iOS 6 Palette (nested — used by ios6 components)
-    ios: {
-        linen: '#C5BDB4',
-        linenDark: '#3A3A3A',
-        blueGradient: ['#B0C8E8', '#6D9DD1'] as string[],
-        darkBlueGradient: ['#3E6FA7', '#204060'] as string[],
-        redGradient: ['#E8A0A0', '#C04040'] as string[],
-        greenGradient: ['#A0E8A0', '#40C040'] as string[],
-        grayGradient: ['#F0F0F0', '#D0D0D0'] as string[],
-        orangeGradient: ['#FFCC80', '#FFA726'] as string[],
-        textShadow: 'rgba(255, 255, 255, 0.5)',
-        textShadowDark: 'rgba(0, 0, 0, 0.4)',
-        border: '#C8C7CC',
-        borderLight: 'rgba(255,255,255,0.6)',
-        borderDark: '#999',
-        headerText: '#4C566C',
-        bodyText: '#000000',
-        detailText: '#8E8E93',
-        blueText: '#3E6FA7',
-        // Also include iosGray here since GroupedTableView uses colors.ios.iosGray
-        iosGray: '#8E8E93',
-    },
+// Modern iOS System Colors (accessible via PlatformColor usually, but hardcoded here for expo compatibility)
+// Based on Apple Human Interface Guidelines
 
-    // ===== FLAT PROPERTIES (used by ALL existing screens) =====
-    primary: '#3E6FA7',
-    primaryLight: '#73B4FF',
-    primaryDark: '#3570B0',
+const baseColors = {
+    // System Colors
+    red: '#FF3B30',
+    orange: '#FF9500',
+    yellow: '#FFCC00',
+    green: '#34C759',
+    mint: '#00C7BE',
+    teal: '#30B0C7',
+    cyan: '#32ADE6',
+    blue: '#007AFF',
+    indigo: '#5856D6',
+    purple: '#AF52DE',
+    pink: '#FF2D55',
+    brown: '#A2845E',
 
-    background: '#C5BDB4',
-    surface: '#FFFFFF',
-    card: '#FFFFFF',
+    // Grays
+    systemGray: '#8E8E93',
+    systemGray2: '#AEAEB2',
+    systemGray3: '#C7C7CC',
+    systemGray4: '#D1D1D6',
+    systemGray5: '#E5E5EA',
+    systemGray6: '#F2F2F7',
 
-    text: '#000000',
-    textPrimary: '#333333',
-    textSecondary: '#8E8E93',
-    textTertiary: '#B2B2B2',
-    textInverse: '#FFFFFF',
-    textShadow: 'rgba(255, 255, 255, 0.7)',
-
-    success: '#4CD964',
-    warning: '#FF9500',
-    error: '#FF3B30',
-    info: '#5AC8FA',
-    notification: '#FF3B30',
-
-    divider: '#C8C7CC',
-    border: '#C8C7CC',
-    disabled: '#EFEFF4',
-
-    headerGradientTop: '#F8F8F9',
-    headerGradientBottom: '#E3E3E8',
-    buttonGradientTop: 'rgba(255, 255, 255, 0.3)',
-    buttonGradientBottom: 'rgba(0, 0, 0, 0.05)',
-
-    shadowLight: 'rgba(255, 255, 255, 1.0)',
-    shadowDark: 'rgba(0, 0, 0, 0.3)',
-
-    glossHighlight: 'rgba(255, 255, 255, 0.6)',
-    glossShadow: 'rgba(0, 0, 0, 0.15)',
-    linen: '#E5E5EA',
-    linenDark: '#3A3A3C',
-
-    iosGray: '#8E8E93',
-    iosGray2: '#AEAEB2',
-    iosGray3: '#C7C7CC',
-    iosGray4: '#D1D1D6',
-    iosGray5: '#E5E5EA',
-    iosGray6: '#F2F2F7',
-    iosBlue: '#4A90D9',
-    iosPurple: '#5856D6',
-    iosOrange: '#FF9500',
-
-    bloomRemember: '#FF9500',
-    bloomUnderstand: '#FFCC00',
-    bloomApply: '#4CD964',
-    bloomAnalyze: '#5AC8FA',
-    bloomEvaluate: '#5856D6',
-    bloomCreate: '#FF2D55',
-
-    difficultyEasy: '#4CD964',
-    difficultyMedium: '#FF9500',
-    difficultyHard: '#FF3B30',
+    // Dark Mode Grays (for reference)
+    // systemGrayDark: '#8E8E93',
+    // systemGray2Dark: '#636366',
+    // systemGray3Dark: '#48484A',
+    // systemGray4Dark: '#3A3A3C',
+    // systemGray5Dark: '#2C2C2E',
+    // systemGray6Dark: '#1C1C1E',
 };
 
-// Dark Theme
+export const colors = {
+    ...baseColors,
+
+    // Semantic Colors
+    background: '#FFFFFF', // systemBackground
+    secondaryBackground: '#F2F2F7', // systemGroupedBackground
+    tertiaryBackground: '#FFFFFF', // secondarySystemGroupedBackground
+
+    text: '#000000', // label
+    textSecondary: '#3C3C4399', // secondaryLabel (60% opacity)
+    textTertiary: '#3C3C434D', // tertiaryLabel (30% opacity)
+    textQuarter: '#3C3C432E', // quaternaryLabel (18% opacity)
+    textInverse: '#FFFFFF',
+
+    separator: '#3C3C435C', // separator (opaque: #C6C6C8)
+    opaqueSeparator: '#C6C6C8',
+
+    link: baseColors.blue,
+
+    // Feedback
+    success: baseColors.green,
+    warning: baseColors.orange,
+    error: baseColors.red,
+    successDark: '#248A3D', // Darker green for text on light backgrounds
+    info: baseColors.blue,
+
+    // Component Specific
+    card: '#FFFFFF',
+    border: '#C6C6C8',
+    shadow: '#000000',
+
+    // Bloom's Taxonomy (Modernized)
+    bloomRemember: baseColors.orange,
+    bloomUnderstand: baseColors.yellow,
+    bloomApply: baseColors.green,
+    bloomAnalyze: baseColors.blue,
+    bloomEvaluate: baseColors.indigo,
+    bloomCreate: baseColors.pink,
+
+    // Difficulty
+    difficultyEasy: baseColors.green,
+    difficultyMedium: baseColors.orange,
+    difficultyHard: baseColors.red,
+
+    // Legacy/Backwards Compatibility (Map to new tokens where possible)
+    primary: baseColors.blue,
+    primaryLight: '#5AC8FA', // cyan-ish
+    primaryDark: '#0040DD',
+    surface: '#FFFFFF',
+
+    // Legacy Aliases (for backward compatibility)
+    textPrimary: '#000000', // mapped to text
+    divider: '#3C3C435C', // mapped to separator
+    disabled: baseColors.systemGray4,
+    iosBlue: baseColors.blue,
+    iosPurple: baseColors.purple,
+    iosGray6: baseColors.systemGray6,
+    iosGray5: baseColors.systemGray5,
+    iosGray4: baseColors.systemGray4,
+    iosGray3: baseColors.systemGray3,
+    iosGray2: baseColors.systemGray2,
+    iosGray: baseColors.systemGray,
+
+    ios: {
+        // Keeping structure but pointing to modern colors to prevent crashes before refactor
+        linen: '#F2F2F7', // mapped to systemGroupedBackground
+        linenDark: '#000000',
+        blueGradient: [baseColors.blue, baseColors.blue], // No gradients
+        darkBlueGradient: [baseColors.indigo, baseColors.indigo],
+        redGradient: [baseColors.red, baseColors.red],
+        greenGradient: [baseColors.green, baseColors.green],
+        grayGradient: [baseColors.systemGray6, baseColors.systemGray6],
+        orangeGradient: [baseColors.orange, baseColors.orange],
+        textShadow: 'transparent',
+        textShadowDark: 'transparent',
+        border: '#C6C6C8',
+        borderLight: '#E5E5EA',
+        borderDark: '#8E8E93',
+        headerText: '#000000',
+        bodyText: '#000000',
+        detailText: '#3C3C4399',
+        blueText: baseColors.blue,
+        iosGray: baseColors.systemGray,
+    }
+};
+
 export const darkColors = {
     ...colors,
+    ...baseColors,
+
+    background: '#000000', // systemBackground
+    secondaryBackground: '#1C1C1E', // systemGroupedBackground
+    tertiaryBackground: '#2C2C2E', // secondarySystemGroupedBackground
+
+    text: '#FFFFFF',
+    textSecondary: '#EBEBF599', // 60%
+    textTertiary: '#EBEBF54D', // 30%
+    textQuarter: '#EBEBF52E', // 18%
+    textInverse: '#000000',
+
+    // Legacy Aliases (Dark)
+    textPrimary: '#FFFFFF',
+    divider: '#54545899',
+    disabled: '#3A3A3C', // systemGray4Dark
+    iosBlue: baseColors.blue, // usually lighter in dark mode but keeping simple
+    iosPurple: baseColors.purple,
+    iosGray6: '#1C1C1E', // systemGray6Dark
+    iosGray5: '#2C2C2E',
+    iosGray: '#8E8E93',
+
+    separator: '#54545899', // 60%
+    opaqueSeparator: '#38383A',
+
+    card: '#1C1C1E',
+    border: '#38383A',
+    surface: '#1C1C1E',
+    primary: baseColors.blue,
+    primaryLight: '#5AC8FA',
+    primaryDark: '#0A84FF',
+
     ios: {
         ...colors.ios,
-        linen: '#2C2C2E',
+        linen: '#000000',
         linenDark: '#1C1C1E',
-    },
-    background: '#2C2C2E',
-    surface: '#1C1C1E',
-    card: '#1C1C1E',
-    textPrimary: '#FFFFFF',
-    textSecondary: '#EBEBF5',
-    textTertiary: '#8E8E93',
-    textInverse: '#000000',
-    textShadow: 'rgba(0, 0, 0, 0.8)',
-    divider: '#38383A',
-    border: '#38383A',
-    disabled: '#3A3A3C',
-    headerGradientTop: '#444446',
-    headerGradientBottom: '#1C1C1E',
-    buttonGradientTop: '#636366',
-    buttonGradientBottom: '#2C2C2E',
-    shadowLight: 'rgba(255, 255, 255, 0.1)',
-    shadowDark: 'rgba(0, 0, 0, 0.8)',
-    glossHighlight: 'rgba(255, 255, 255, 0.1)',
-    glossShadow: 'rgba(0, 0, 0, 0.5)',
-    iosGray: '#8E8E93',
-    iosGray2: '#636366',
-    iosGray3: '#48484A',
-    iosGray4: '#3A3A3C',
-    iosGray5: '#2C2C2E',
-    iosGray6: '#1C1C1E',
+        headerText: '#FFFFFF',
+        bodyText: '#FFFFFF',
+        detailText: '#EBEBF599',
+    }
 };

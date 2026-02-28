@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { typography, spacing} from '../../theme';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
+import { colors } from '../../theme/colors';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { useAuthStore } from '../../store';
-import { useAppTheme } from '../../hooks';
-import { Button, Input, SegmentedControl } from '../../components/common';
+import { Input, SegmentedControl, ModernButton, ScreenBackground } from '../../components/common';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
@@ -15,9 +15,6 @@ export const LoginScreen = ({ navigation }: Props) => {
     const [regNo, setRegNo] = useState('');
     const [password, setPassword] = useState('');
     const [selectedRoleIndex, setSelectedRoleIndex] = useState(0);
-
-    const { colors } = useAppTheme();
-    const styles = getStyles(colors);
 
     const roles = ['Faculty', 'Vetter'];
     const roleValues = ['faculty', 'vetter'] as const;
@@ -34,8 +31,7 @@ export const LoginScreen = ({ navigation }: Props) => {
     const isFormValid = regNo.trim() !== '' && password.trim() !== '';
 
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-            <View style={styles.linenBackground} />
+        <ScreenBackground>
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.keyboardView}
@@ -43,8 +39,8 @@ export const LoginScreen = ({ navigation }: Props) => {
                 <View style={styles.content}>
                     {/* Branding */}
                     <View style={styles.header}>
-                        <View style={styles.logoPlaceholder}>
-                            <Text style={styles.logoText}>📚</Text>
+                        <View style={styles.iconContainer}>
+                            <Text style={styles.logoIcon}>📚</Text>
                         </View>
                         <Text style={styles.appName}>LM Trainer</Text>
                         <Text style={styles.subtitle}>Simats Engineering</Text>
@@ -56,44 +52,39 @@ export const LoginScreen = ({ navigation }: Props) => {
                             segments={roles}
                             selectedIndex={selectedRoleIndex}
                             onChange={setSelectedRoleIndex}
-                            tintColor={selectedRoleIndex === 0 ? colors.primary : colors.success}
                         />
                     </View>
 
                     {/* Form */}
-                    <View style={styles.formCard}>
-                        <View style={styles.inputContainer}>
-                            <Input
-                                label="Register No"
-                                placeholder="Enter your register number"
-                                value={regNo}
-                                onChangeText={setRegNo}
-                                keyboardType="number-pad"
-                                autoCapitalize="none"
-                                autoCorrect={false}
-                                error={error || undefined}
-                            />
-                        </View>
+                    <View style={styles.formContainer}>
+                        <Input
+                            label="Register Number"
+                            placeholder="Enter your register number"
+                            value={regNo}
+                            onChangeText={setRegNo}
+                            keyboardType="number-pad"
+                            autoCapitalize="none"
+                            error={error || undefined}
+                            variant="filled"
+                        />
 
-                        <View style={styles.inputContainer}>
-                            <Input
-                                label="Password"
-                                placeholder="Enter your password"
-                                value={password}
-                                onChangeText={setPassword}
-                                secureTextEntry
-                            />
-                        </View>
+                        <Input
+                            label="Password"
+                            placeholder="Enter your password"
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry
+                            variant="filled"
+                        />
 
                         <View style={styles.buttonContainer}>
-                            <Button
+                            <ModernButton
                                 title={isLoading ? 'Signing In...' : 'Sign In'}
                                 onPress={handleLogin}
                                 disabled={!isFormValid || isLoading}
                                 loading={isLoading}
-                                fullWidth
                                 variant="primary"
-                                size="lg"
+                                size="large"
                             />
                         </View>
                     </View>
@@ -104,98 +95,62 @@ export const LoginScreen = ({ navigation }: Props) => {
                     </Text>
                 </View>
             </KeyboardAvoidingView>
-        </SafeAreaView>
+        </ScreenBackground>
     );
 };
 
-const getStyles = (colors: any) => StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.background, // iOS system gray / linen base
-    },
-    linenBackground: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: colors.background,
-        // In a real implementation, we'd use an ImageBackground with a linen texture
-        // For now, the color from colors.ts simulates it
-    },
+const styles = StyleSheet.create({
     keyboardView: {
         flex: 1,
     },
     content: {
         flex: 1,
-        padding: spacing.lg,
+        padding: spacing.screenHorizontal,
         justifyContent: 'center',
+        maxWidth: 500, // Limit width on tablets
+        alignSelf: 'center',
+        width: '100%',
     },
     header: {
         alignItems: 'center',
         marginBottom: spacing.xl,
     },
-    logoPlaceholder: {
-        width: 100,
-        height: 100,
+    iconContainer: {
+        width: 80,
+        height: 80,
         borderRadius: 20,
-        backgroundColor: colors.surface,
+        backgroundColor: colors.systemGray6,
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: spacing.md,
-        shadowColor: colors.shadowDark,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 5,
-        elevation: 5,
-        borderWidth: 1,
-        borderColor: colors.border,
     },
-    logoText: {
-        fontSize: 56,
+    logoIcon: {
+        fontSize: 40,
     },
     appName: {
         ...typography.h1,
-        fontSize: 28,
-        color: colors.textPrimary,
-        marginBottom: spacing.xs,
-        textShadowColor: colors.textShadow,
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 0,
+        color: colors.text,
+        marginBottom: 4,
+        textAlign: 'center',
     },
     subtitle: {
         ...typography.body,
-        fontSize: 16,
         color: colors.textSecondary,
         textAlign: 'center',
-        textShadowColor: colors.textShadow,
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 0,
     },
     roleContainer: {
-        marginBottom: spacing.md,
+        marginBottom: spacing.lg,
     },
-    formCard: {
-        backgroundColor: colors.surface,
-        padding: spacing.lg,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: colors.border,
-        shadowColor: colors.shadowDark,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    inputContainer: {
-        marginBottom: spacing.md,
+    formContainer: {
+        marginBottom: spacing.xl,
     },
     buttonContainer: {
         marginTop: spacing.md,
     },
     helperText: {
-        ...typography.caption,
+        ...typography.caption1,
         color: colors.textTertiary,
         textAlign: 'center',
         marginTop: spacing.lg,
-        textShadowColor: colors.textShadow,
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 0,
     },
 });

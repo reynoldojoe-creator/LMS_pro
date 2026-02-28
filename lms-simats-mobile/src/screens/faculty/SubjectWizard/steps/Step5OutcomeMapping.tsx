@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, Modal } from 'react-native';
 import { useAppTheme } from '../../../../hooks';
-import { spacing, typography} from '../../../../theme';
+import { typography } from '../../../../theme/typography';
+import { spacing } from '../../../../theme/spacing';
 import { Button, LoadingSpinner } from '../../../../components/common';
 import { subjectService } from '../../../../services/subjectService';
 
@@ -19,7 +20,7 @@ export const Step5OutcomeMapping = ({ subjectId, onFinish, onBack }: Props) => {
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
     const [currentTopicId, setCurrentTopicId] = useState<string | null>(null);
-    const [selectedCOs, setSelectedCOs] = useState<number[]>([]);
+    const [selectedCOs, setSelectedCOs] = useState<{ co_id: number; weight: string }[]>([]);
     const [selectedLOs, setSelectedLOs] = useState<number[]>([]);
 
     useEffect(() => {
@@ -44,11 +45,16 @@ export const Step5OutcomeMapping = ({ subjectId, onFinish, onBack }: Props) => {
         setModalVisible(true);
     };
 
-    const toggleCO = (id: number) => {
-        if (selectedCOs.includes(id)) {
-            setSelectedCOs(selectedCOs.filter(c => c !== id));
+    const setCOWeight = (id: number, weight: string) => {
+        if (weight === 'None') {
+            setSelectedCOs(selectedCOs.filter(c => c.co_id !== id));
         } else {
-            setSelectedCOs([...selectedCOs, id]);
+            const existing = selectedCOs.find(c => c.co_id === id);
+            if (existing) {
+                setSelectedCOs(selectedCOs.map(c => c.co_id === id ? { ...c, weight } : c));
+            } else {
+                setSelectedCOs([...selectedCOs, { co_id: id, weight }]);
+            }
         }
     };
 
@@ -116,19 +122,32 @@ export const Step5OutcomeMapping = ({ subjectId, onFinish, onBack }: Props) => {
                             <Text style={styles.modalTitle}>Select Outcomes</Text>
                             <ScrollView style={{ maxHeight: 400 }}>
                                 <Text style={styles.sectionHeader}>Course Outcomes</Text>
-                                {subject.courseOutcomes?.map((co: any) => (
-                                    <TouchableOpacity
-                                        key={co.id}
-                                        style={[
-                                            styles.optionRow,
-                                            selectedCOs.includes(co.id) && styles.selectedOption
-                                        ]}
-                                        onPress={() => toggleCO(co.id)}
-                                    >
-                                        <Text style={{ color: colors.textPrimary }}>{co.code}: {co.description?.substring(0, 30)}...</Text>
-                                        {selectedCOs.includes(co.id) && <Text style={{ color: colors.primary }}>✓</Text>}
-                                    </TouchableOpacity>
-                                ))}
+                                {subject.courseOutcomes?.map((co: any) => {
+                                    const selectedWeight = selectedCOs.find(c => c.co_id === co.id)?.weight || 'None';
+                                    return (
+                                        <View key={co.id} style={styles.coMappingContainer}>
+                                            <Text style={styles.coDescription}>{co.code}: {co.description?.substring(0, 50)}...</Text>
+                                            <View style={styles.weightSelector}>
+                                                {['None', 'Low', 'Moderate', 'High'].map(weight => (
+                                                    <TouchableOpacity
+                                                        key={weight}
+                                                        style={[
+                                                            styles.weightOption,
+                                                            selectedWeight === weight && styles.weightSelected
+                                                        ]}
+                                                        onPress={() => setCOWeight(co.id, weight)}
+                                                    >
+                                                        <Text style={{
+                                                            fontSize: 12,
+                                                            color: selectedWeight === weight ? 'white' : colors.textSecondary,
+                                                            fontWeight: selectedWeight === weight ? 'bold' : 'normal'
+                                                        }}>{weight}</Text>
+                                                    </TouchableOpacity>
+                                                ))}
+                                            </View>
+                                        </View>
+                                    );
+                                })}
 
                                 <Text style={styles.sectionHeader}>Learning Outcomes</Text>
                                 {subject.learningOutcomes?.map((lo: any) => (
@@ -250,6 +269,36 @@ const getStyles = (colors: any) => StyleSheet.create({
     selectedOption: {
         borderColor: colors.primary,
         backgroundColor: colors.primary + '10', // hex with opacity approximation
+    },
+    coMappingContainer: {
+        padding: spacing.md,
+        borderWidth: 1,
+        borderColor: colors.itemBorder,
+        borderRadius: 8,
+        marginBottom: spacing.xs,
+        backgroundColor: colors.surface,
+    },
+    coDescription: {
+        ...typography.body,
+        color: colors.textPrimary,
+        marginBottom: spacing.sm,
+    },
+    weightSelector: {
+        flexDirection: 'row',
+        backgroundColor: colors.background,
+        borderRadius: 8,
+        padding: 4,
+        justifyContent: 'space-between',
+    },
+    weightOption: {
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 6,
+        alignItems: 'center',
+        flex: 1,
+    },
+    weightSelected: {
+        backgroundColor: colors.primary,
     },
     modalButtons: {
         flexDirection: 'row',

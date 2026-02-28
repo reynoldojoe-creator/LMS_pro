@@ -1,8 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, StyleSheet } from 'react-native';
-import { colors, typography } from '../theme';
 import { useAppTheme } from '../hooks';
 
 // Import screens
@@ -28,15 +26,7 @@ import { SettingsScreen } from '../screens/common/SettingsScreen';
 import { ProfileScreen } from '../screens/common/ProfileScreen';
 
 // Custom Tab Bar
-import { GlossyTabBar } from '../components/ios6/GlossyTabBar';
-
-// Placeholder screens
-const PlaceholderScreen = ({ title }: { title: string }) => (
-    <View style={styles.placeholder}>
-        <Text style={styles.placeholderText}>{title}</Text>
-        <Text style={styles.placeholderSubtext}>Coming soon...</Text>
-    </View>
-);
+// import { ModernTabBar } from '../components/common/ModernTabBar'; // It is already imported below, so we just remove the GlossyTabBar import.
 
 // Stack navigator for Rubrics
 const RubricsStack = createNativeStackNavigator();
@@ -76,11 +66,23 @@ const SubjectsNavigator = () => (
 
 const HomeStack = createNativeStackNavigator();
 
+// Import ModernTabBar
+import { ModernTabBar } from '../components/common/ModernTabBar';
+import { QuestionBankScreen } from '../screens/faculty/QuestionBankScreen';
+
+// Constants...
+// ...
+
 const HomeNavigator = () => (
     <HomeStack.Navigator screenOptions={{ headerShown: false }}>
         <HomeStack.Screen name="Dashboard" component={DashboardScreen} />
         <HomeStack.Screen name="Settings" component={SettingsScreen} />
         <HomeStack.Screen name="Profile" component={ProfileScreen} />
+        <HomeStack.Screen name="QuestionBank" component={QuestionBankScreen} />
+        <HomeStack.Screen name="QuickGenerate" component={QuickGenerateScreen} />
+        <HomeStack.Screen name="Generating" component={GeneratingScreen} />
+        <HomeStack.Screen name="GenerationResults" component={GenerationResultsScreen} />
+        <HomeStack.Screen name="QuestionPreview" component={QuestionPreviewScreen} />
     </HomeStack.Navigator>
 );
 
@@ -89,7 +91,7 @@ const Tab = createBottomTabNavigator();
 export const FacultyNavigator = () => {
     return (
         <Tab.Navigator
-            tabBar={(props) => <GlossyTabBar {...props} />}
+            tabBar={(props) => <ModernTabBar {...props} />}
             screenOptions={{
                 headerShown: false,
             }}
@@ -130,20 +132,4 @@ export const FacultyNavigator = () => {
     );
 };
 
-const styles = StyleSheet.create({
-    placeholder: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: colors.background,
-    },
-    placeholderText: {
-        ...typography.h2,
-        color: colors.textPrimary,
-        marginBottom: 8,
-    },
-    placeholderSubtext: {
-        ...typography.body,
-        color: colors.textSecondary,
-    },
-});
+

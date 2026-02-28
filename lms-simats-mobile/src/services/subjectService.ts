@@ -20,6 +20,13 @@ export interface CreateLOInput {
     bloom_level?: string;
 }
 
+export interface OBEUpdateData {
+    courseOutcomes?: CreateCOInput[];
+    learningOutcomes?: CreateLOInput[];
+    programOutcomes?: any[]; // details unknown, using any for now
+    mapping?: any;
+}
+
 export const subjectService = {
     getAll: async (): Promise<Subject[]> => {
         const response = await api.get(API_CONFIG.ENDPOINTS.SUBJECTS);
@@ -78,10 +85,10 @@ export const subjectService = {
         return response.data;
     },
 
-    mapTopicOutcomes: async (subjectId: string, topicId: string, coIds: number[], loIds: number[]): Promise<void> => {
+    mapTopicOutcomes: async (subjectId: string, topicId: string, coMappings: { co_id: number; weight: string }[], loIds: number[]): Promise<void> => {
         await api.post(
             API_CONFIG.ENDPOINTS.TOPIC_MAP_OUTCOMES(subjectId, topicId),
-            { co_ids: coIds, lo_ids: loIds }
+            { co_mappings: coMappings, lo_ids: loIds }
         );
     },
 

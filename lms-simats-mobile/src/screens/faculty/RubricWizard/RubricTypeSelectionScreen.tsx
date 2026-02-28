@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { colors, typography, spacing} from '../../../theme';
+import { colors } from '../../../theme/colors';
+import { typography } from '../../../theme/typography';
+import { spacing } from '../../../theme/spacing';
 import { Ionicons } from '@expo/vector-icons';
-import { Card } from '../../../components/common';
+import { Card, ScreenBackground, ModernNavBar } from '../../../components/common';
 
 type Props = NativeStackScreenProps<any, 'RubricTypeSelection'>;
 
@@ -55,14 +56,12 @@ export const RubricTypeSelectionScreen = ({ navigation, route }: Props) => {
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Select Assessment Type</Text>
-                <View style={{ width: 24 }} />
-            </View>
+        <ScreenBackground>
+            <ModernNavBar
+                title="Select Assessment Type"
+                showBack
+                onBack={() => navigation.goBack()}
+            />
 
             <ScrollView contentContainerStyle={styles.content}>
                 <Text style={styles.subtitle}>
@@ -70,21 +69,23 @@ export const RubricTypeSelectionScreen = ({ navigation, route }: Props) => {
                 </Text>
 
                 {EXAM_TYPES.map((type) => (
-                    <TouchableOpacity key={type.id} onPress={() => handleSelect(type.id)}>
-                        <Card style={styles.card}>
-                            <View style={[styles.iconContainer, { backgroundColor: type.color + '20' }]}>
-                                <Ionicons name={type.icon} size={28} color={type.color} />
-                            </View>
-                            <View style={styles.textContainer}>
-                                <Text style={styles.title}>{type.title}</Text>
-                                <Text style={styles.description}>{type.description}</Text>
-                            </View>
-                            <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
-                        </Card>
-                    </TouchableOpacity>
+                    <Card
+                        key={type.id}
+                        style={styles.card}
+                        onPress={() => handleSelect(type.id)}
+                    >
+                        <View style={[styles.iconContainer, { backgroundColor: type.color + '20' }]}>
+                            <Ionicons name={type.icon as any} size={28} color={type.color} />
+                        </View>
+                        <View style={styles.textContainer}>
+                            <Text style={styles.title}>{type.title}</Text>
+                            <Text style={styles.description}>{type.description}</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+                    </Card>
                 ))}
             </ScrollView>
-        </SafeAreaView>
+        </ScreenBackground>
     );
 };
 

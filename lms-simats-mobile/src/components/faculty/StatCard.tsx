@@ -1,18 +1,16 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { typography, spacing} from '../../theme';
-import { useAppTheme } from '../../hooks';
+import { typography } from '../../theme/typography';
+import { spacing, borderRadius } from '../../theme/spacing';
+import { colors } from '../../theme/colors';
 
 interface StatCardProps {
-    value: number;
+    value: number | string;
     label: string;
     onPress?: () => void;
 }
 
 export const StatCard: React.FC<StatCardProps> = ({ value, label, onPress }) => {
-    const { colors } = useAppTheme();
-    const styles = getStyles(colors);
     const Component = onPress ? TouchableOpacity : View;
 
     return (
@@ -21,54 +19,51 @@ export const StatCard: React.FC<StatCardProps> = ({ value, label, onPress }) => 
             activeOpacity={onPress ? 0.7 : 1}
             style={styles.container}
         >
-            <LinearGradient
-                colors={['#ffffff', '#e0e0e0']}
-                style={styles.card}
-            >
-                <Text style={styles.value} adjustsFontSizeToFit numberOfLines={1}>{value}</Text>
-                <Text style={styles.label} adjustsFontSizeToFit numberOfLines={1}>{label}</Text>
-            </LinearGradient>
+            <View style={styles.content}>
+                <Text
+                    style={styles.value}
+                >
+                    {String(value)}
+                </Text>
+                <Text style={styles.label} numberOfLines={1} adjustsFontSizeToFit>{label}</Text>
+            </View>
         </Component>
     );
 };
 
-const getStyles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
     container: {
         flex: 1,
-        borderRadius: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-        elevation: 3,
-    },
-    card: {
-        flex: 1,
-        padding: spacing.md,
-        borderRadius: 12,
-        alignItems: 'center',
+        backgroundColor: colors.card,
+        borderRadius: borderRadius.lg,
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 2,
+        minHeight: 88,
         justifyContent: 'center',
-        minHeight: 80,
+
         borderWidth: 1,
-        borderColor: '#a0a0a0',
-        borderTopColor: '#c0c0c0',
-        borderBottomColor: '#808080',
+        borderColor: 'rgba(0,0,0,0.03)',
+    },
+    content: {
+        padding: spacing.md,
+        alignItems: 'center',
     },
     value: {
         ...typography.h1,
-        color: '#333333',
-        marginBottom: spacing.xs,
-        textShadowColor: 'rgba(255, 255, 255, 0.8)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 0,
+        fontSize: 36,
+        color: colors.primary, // or text based on design
+        marginBottom: 4,
+        fontWeight: '700',
+        textAlign: 'center',
     },
     label: {
-        ...typography.caption,
-        color: '#666666',
-        textAlign: 'center',
-        textShadowColor: 'rgba(255, 255, 255, 0.8)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 0,
+        ...typography.caption1,
+        color: colors.textSecondary,
         fontWeight: '600',
+        textTransform: 'uppercase',
+        fontSize: 11,
     },
 });

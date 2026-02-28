@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { colors, typography, spacing} from '../../../../theme';
+import { colors } from '../../../../theme/colors';
+import { typography } from '../../../../theme/typography';
+import { spacing } from '../../../../theme/spacing';
 import { Ionicons } from '@expo/vector-icons';
 
 interface Props {
@@ -11,14 +13,14 @@ interface Props {
 }
 
 export const TopicSelector = ({ subject, selectedTopics, onChange, maxSelection }: Props) => {
-    const units = subject.units || [];
+    // Subject API returns topics as a flat array: subject.topics
+    const topics = subject.topics || [];
 
     const handleToggle = (topicId: number) => {
         if (selectedTopics.includes(topicId)) {
             onChange(selectedTopics.filter(id => id !== topicId));
         } else {
             if (maxSelection && selectedTopics.length >= maxSelection) {
-                // Could show toast/alert here
                 return;
             }
             onChange([...selectedTopics, topicId]);
@@ -27,39 +29,40 @@ export const TopicSelector = ({ subject, selectedTopics, onChange, maxSelection 
 
     return (
         <View style={styles.container}>
-            <Text style={styles.label}>Select Topics {maxSelection ? `(Max ${maxSelection})` : ''}</Text>
-            <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
-                {units.map((unit: any) => (
-                    <View key={unit.unit_number} style={styles.unitContainer}>
-                        <Text style={styles.unitTitle}>Unit {unit.unit_number}: {unit.unit_title}</Text>
-                        <View style={styles.topicsGrid}>
-                            {unit.topics?.map((topic: any) => {
-                                const isSelected = selectedTopics.includes(topic.id);
-                                return (
-                                    <TouchableOpacity
-                                        key={topic.id}
-                                        style={[
-                                            styles.topicChip,
-                                            isSelected && styles.topicChipSelected
-                                        ]}
-                                        onPress={() => handleToggle(topic.id)}
-                                    >
-                                        <Text style={[
-                                            styles.topicText,
-                                            isSelected && { color: '#FFFFFF' }
-                                        ]}>
-                                            {topic.name}
-                                        </Text>
-                                        {isSelected && (
-                                            <Ionicons name="checkmark" size={12} color="#FFFFFF" style={{ marginLeft: 4 }} />
-                                        )}
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </View>
+            <Text style={styles.label}>
+                {"Select Topics" + (maxSelection ? ` (Max ${maxSelection})` : '')}
+            </Text>
+            {topics.length === 0 ? (
+                <Text style={styles.emptyText}>No topics found for this subject.</Text>
+            ) : (
+                <ScrollView style={{ maxHeight: 250 }} nestedScrollEnabled>
+                    <View style={styles.topicsGrid}>
+                        {topics.map((topic: any) => {
+                            const isSelected = selectedTopics.includes(topic.id);
+                            return (
+                                <TouchableOpacity
+                                    key={topic.id}
+                                    style={[
+                                        styles.topicChip,
+                                        isSelected && styles.topicChipSelected
+                                    ]}
+                                    onPress={() => handleToggle(topic.id)}
+                                >
+                                    <Text style={[
+                                        styles.topicText,
+                                        isSelected && styles.topicTextSelected
+                                    ]}>
+                                        {topic.name}
+                                    </Text>
+                                    {isSelected && (
+                                        <Ionicons name="checkmark" size={12} color="#FFFFFF" style={{ marginLeft: 4 }} />
+                                    )}
+                                </TouchableOpacity>
+                            );
+                        })}
                     </View>
-                ))}
-            </ScrollView>
+                </ScrollView>
+            )}
         </View>
     );
 };
@@ -73,13 +76,10 @@ const styles = StyleSheet.create({
         color: colors.textPrimary,
         marginBottom: spacing.sm,
     },
-    unitContainer: {
-        marginBottom: spacing.sm,
-    },
-    unitTitle: {
-        ...typography.captionBold,
-        color: colors.textSecondary,
-        marginBottom: 4,
+    emptyText: {
+        ...typography.caption,
+        color: colors.textTertiary,
+        fontStyle: 'italic',
     },
     topicsGrid: {
         flexDirection: 'row',

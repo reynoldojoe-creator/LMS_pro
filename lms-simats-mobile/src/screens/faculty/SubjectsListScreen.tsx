@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, ScrollView, RefreshControl } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFacultyStore } from '../../store/facultyStore';
-import { LinenBackground, GlossyNavBar, GroupedTableView } from '../../components/ios6';
+import { ScreenBackground, ModernNavBar, InsetGroupedList } from '../../components/common';
 import { colors } from '../../theme/colors';
-import { spacing, typography } from '../../theme';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
 
 type Props = NativeStackScreenProps<any, 'Subjects'>;
 
@@ -26,44 +27,38 @@ export const SubjectsListScreen = ({ navigation }: Props) => {
         navigation.navigate('SubjectDetail', { subjectId: subject.id });
     };
 
-    // Transform subjects into GroupedTableView sections
-    const subjectRows = subjects.map(subject => ({
-        ...subject,
+    const items = subjects.map(subject => ({
+        id: subject.id,
         title: subject.name,
         subtitle: subject.code,
-        value: `${subject.topics?.length || 0} topics`, // Display topic count
+        value: `${subject.topics?.length || 0} topics`,
         onPress: () => handleSubjectPress(subject),
+        showChevron: true,
+        icon: 'book-outline'
     }));
 
     return (
-        <LinenBackground>
-            <GlossyNavBar title="Subjects" showBack />
+        <ScreenBackground>
+            <ModernNavBar title="Subjects" showBack onBack={() => navigation.goBack()} />
 
             {isLoadingSubjects && !refreshing && subjects.length === 0 ? (
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#4C566C" />
+                    <ActivityIndicator size="large" color={colors.primary} />
                 </View>
             ) : (
-                <GroupedTableView
-                    style={styles.list}
-                    refreshing={refreshing}
-                    onRefresh={onRefresh}
-                    sections={[
-                        {
-                            title: 'Available Subjects',
-                            data: subjectRows
-                        }
-                    ]}
-                    renderItem={({ item }) => (
-                        // Custom render item passed to GroupedTableView if needed, 
-                        // or rely on GroupedTableView's default renderer which uses title/subtitle
-                        // note: GroupedTableView expects 'data' in section, not 'rows'.
-                        // I updated the prop to 'data' in the section object above 
-                        undefined
-                    )}
-                />
+                <ScrollView
+                    style={{ flex: 1 }}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+                    }
+                >
+                    <InsetGroupedList
+                        items={items}
+                        header="AVAILABLE SUBJECTS"
+                    />
+                </ScrollView>
             )}
-        </LinenBackground>
+        </ScreenBackground>
     );
 };
 
@@ -73,8 +68,4 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    list: {
-        flex: 1,
-    },
-    // Styles below were leftovers from the broken file, cleaning them up
 });

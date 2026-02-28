@@ -3,7 +3,8 @@ import { View, ScrollView, StyleSheet, Alert, TouchableOpacity, Text } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as DocumentPicker from 'expo-document-picker';
-import { typography, spacing } from '../../theme';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
 import { useFacultyStore } from '../../store/facultyStore';
 import { useAppTheme } from '../../hooks';
 import { Header, Input, Button, LoadingSpinner } from '../../components/common';

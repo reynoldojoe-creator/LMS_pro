@@ -74,8 +74,25 @@ export const useVetterStore = create<VetterState>((set, get) => ({
             // Assuming an endpoint exists for this, creating one based on pattern
             // or fitering from a general batches endpoint
             const response = await api.get('/vetting/batches?status=completed');
+
+            const completedBatches = response.data.map((batch: any) => ({
+                id: batch.id,
+                rubricId: batch.rubricId || batch.rubric_id,
+                subjectId: batch.subjectId || batch.subject_id,
+                title: batch.title || 'Untitled Batch',
+                facultyName: batch.facultyName || batch.generated_by || 'Unknown',
+                totalQuestions: batch.totalQuestions || batch.total_questions || 0,
+                reviewedQuestions: batch.reviewedQuestions || ((batch.totalQuestions || batch.total_questions || 0) - (batch.pending_count || 0)),
+                approvedCount: batch.approvedCount || batch.approved_count || 0,
+                rejectedCount: batch.rejectedCount || batch.rejected_count || 0,
+                quarantinedCount: batch.quarantinedCount || batch.quarantined_count || 0,
+                generatedAt: batch.generatedAt || batch.generated_at,
+                status: batch.status || 'completed',
+                questions: [] // Populated later if needed
+            }));
+
             set({
-                completedBatches: response.data,
+                completedBatches,
                 isLoading: false,
             });
         } catch (error: any) {
@@ -107,6 +124,8 @@ export const useVetterStore = create<VetterState>((set, get) => ({
         try {
             const response = await api.get(API_CONFIG.ENDPOINTS.VETTING_BATCH(batchId));
             const { batch, questions } = response.data;
+            const subjectCOs = response.data.subjectCOs || [];
+            const subjectLOs = response.data.subjectLOs || [];
 
             // Normalize questions if present
             let normalizedQuestions: Question[] = [];
@@ -167,15 +186,25 @@ export const useVetterStore = create<VetterState>((set, get) => ({
                         // ignore
                     }
 
-                    // Normalize RAG Context
-                    let cleanRagContext: string[] = [];
+                    // Normalize RAG Context — preserve structured format
+                    let cleanRagContext: any = null;
                     const rawRag = (q as any).ragContext || (q as any).rag_context;
-                    if (Array.isArray(rawRag)) {
+                    if (rawRag && typeof rawRag === 'object' && !Array.isArray(rawRag) && rawRag.context) {
+                        // New structured format: {context: [...], reasoning: "..."}
+                        cleanRagContext = rawRag;
+                    } else if (Array.isArray(rawRag)) {
                         cleanRagContext = rawRag;
                     } else if (typeof rawRag === 'string') {
                         try {
                             const parsed = JSON.parse(rawRag);
-                            cleanRagContext = Array.isArray(parsed) ? parsed : (parsed ? [JSON.stringify(parsed)] : []);
+                            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && parsed.context) {
+                                // Structured format stored as JSON string
+                                cleanRagContext = parsed;
+                            } else if (Array.isArray(parsed)) {
+                                cleanRagContext = parsed;
+                            } else if (parsed) {
+                                cleanRagContext = parsed;
+                            }
                         } catch {
                             if (rawRag.trim()) cleanRagContext = [rawRag];
                         }
@@ -221,6 +250,8 @@ export const useVetterStore = create<VetterState>((set, get) => ({
                     generatedAt: batch.generated_at,
                     status: batch.status || 'in_progress',
                     questions: normalizedQuestions,
+                    subjectCOs,
+                    subjectLOs,
                 },
                 isLoading: false,
             });

@@ -10,3 +10,6 @@ python-docx
 upskill
 pandas
 openpyxl
+langchain-text-splitters
+numpy
+fpdf2

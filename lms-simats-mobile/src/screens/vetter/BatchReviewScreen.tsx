@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Text } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Text, ScrollView, RefreshControl } from 'react-native';
 import { useVetterStore } from '../../store/vetterStore';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { LinenBackground, GlossyNavBar, GroupedTableView } from '../../components/ios6';
+import { ScreenBackground, ModernNavBar, InsetGroupedList } from '../../components/common';
 import { colors } from '../../theme/colors';
-import { spacing, typography } from '../../theme';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
 import { Ionicons } from '@expo/vector-icons';
 
 type Props = NativeStackScreenProps<any, 'BatchReview'>;
@@ -52,75 +53,78 @@ export function BatchReviewScreen({ route, navigation }: Props) {
 
     if (isLoading && !refreshing && !currentBatch) {
         return (
-            <LinenBackground>
-                <GlossyNavBar title="Loading..." showBack />
+            <ScreenBackground>
+                <ModernNavBar title="Loading..." showBack onBack={() => navigation.goBack()} />
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#4C566C" />
+                    <ActivityIndicator size="large" color={colors.primary} />
                 </View>
-            </LinenBackground>
+            </ScreenBackground>
         );
     }
 
     if (!currentBatch && !isLoading) {
         return (
-            <LinenBackground>
-                <GlossyNavBar title="Error" showBack />
+            <ScreenBackground>
+                <ModernNavBar title="Error" showBack onBack={() => navigation.goBack()} />
                 <View style={styles.emptyContainer}>
                     <Text style={styles.emptyText}>Batch not found</Text>
                 </View>
-            </LinenBackground>
+            </ScreenBackground>
         );
     }
 
-    const questionRows = currentBatch?.questions?.map((q, i) => {
-        let iconName: any = 'help-circle';
-        let iconColor = '#4A90E2';
+    const questionItems = currentBatch?.questions?.map((q, i) => {
+        let iconName = 'help-circle-outline';
+        let iconColor = colors.primary;
 
         if (q.status === 'approved') {
             iconName = 'checkmark-circle';
             iconColor = colors.success;
         } else if (q.status === 'rejected') {
             iconName = 'close-circle';
-            iconColor = '#FF3B30';
+            iconColor = colors.error;
         } else if (q.status === 'quarantined') {
             iconName = 'flag';
-            iconColor = '#FF9500';
+            iconColor = colors.warning;
         }
 
         return {
+            id: q.id,
             title: `Q${i + 1}: ${q.type.toUpperCase()}`,
             subtitle: q.questionText ? (q.questionText.substring(0, 40) + '...') : 'No text',
-            chevron: true,
-            onPress: () => handleQuestionPress(q.id, i)
+            showChevron: true,
+            onPress: () => handleQuestionPress(q.id, i),
+            icon: iconName,
+            iconColor: iconColor
         };
     }) || [];
 
     return (
-        <LinenBackground>
-            <GlossyNavBar
+        <ScreenBackground>
+            <ModernNavBar
                 title={currentBatch?.title || "Batch Review"}
                 showBack
-                rightButton={{
-                    title: 'Finish',
-                    onPress: handleCompleteSession,
-                    variant: 'blue'
-                }}
+                onBack={() => navigation.goBack()}
+                rightButton={
+                    <TouchableOpacity onPress={handleCompleteSession}>
+                        <Text style={{ ...typography.body, color: colors.primary }}>Finish</Text>
+                    </TouchableOpacity>
+                }
             />
 
-            <View style={styles.content}>
-                <GroupedTableView
-                    sections={[
-                        {
-                            title: 'Questions',
-                            data: questionRows,
-                            footer: `Total: ${currentBatch?.totalQuestions || 0} • Reviewed: ${currentBatch?.reviewedQuestions || 0}`
-                        }
-                    ]}
-                    refreshing={refreshing}
-                    onRefresh={onRefresh}
+            <ScrollView
+                style={styles.content}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+                }
+            >
+                <InsetGroupedList
+                    items={questionItems}
+                    header="QUESTIONS"
+                    footer={`Total: ${currentBatch?.totalQuestions || 0} • Reviewed: ${currentBatch?.reviewedQuestions || 0}`}
                 />
-            </View>
-        </LinenBackground>
+            </ScrollView>
+        </ScreenBackground>
     );
 }
 

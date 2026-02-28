@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, typography, spacing } from '../../theme';
+import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
+import { ScreenBackground, ModernNavBar } from '../../components/common';
 import { StatBox, HorizontalBarChart, CoverageWarning } from '../../components/charts';
 import { reportService } from '../../services/reportService';
 import { subjectService } from '../../services/subjectService';
@@ -95,10 +97,11 @@ export const ReportsScreen = () => {
     const underRepresentedCOs = coCoverage.filter(c => c.question_count === 0);
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Reports & Analytics</Text>
-            </View>
+        <ScreenBackground>
+            <ModernNavBar
+                title="Reports & Analytics"
+                showBack={false}
+            />
 
             <ScrollView style={styles.scrollView}>
                 {/* Subject Filter */}
@@ -164,17 +167,17 @@ export const ReportsScreen = () => {
                         <View style={styles.section}>
                             <Text style={styles.sectionTitle}>Question Generation</Text>
                             <View style={styles.statsRow}>
-                                <StatBox value={overview.total_questions} label="Generated" />
-                                <StatBox value={overview.approved} label="Approved" color={colors.success} />
-                                <StatBox value={`${overview.approval_rate}%`} label="Rate" color={colors.primary} />
+                                <StatBox value={String(overview.total_questions ?? 0)} label="Generated" />
+                                <StatBox value={String(overview.approved ?? 0)} label="Approved" color={colors.success} />
+                                <StatBox value={`${overview.approval_rate ?? 0}%`} label="Rate" color={colors.primary} />
                             </View>
                         </View>
 
                         {/* Pending / Rejected mini stats */}
                         <View style={styles.section}>
                             <View style={styles.statsRow}>
-                                <StatBox value={overview.pending} label="Pending" color={colors.warning} />
-                                <StatBox value={overview.rejected} label="Rejected" color={colors.error} />
+                                <StatBox value={String(overview.pending ?? 0)} label="Pending" color={colors.warning} />
+                                <StatBox value={String(overview.rejected ?? 0)} label="Rejected" color={colors.error} />
                             </View>
                         </View>
 
@@ -254,7 +257,7 @@ export const ReportsScreen = () => {
 
                 <View style={styles.bottomPadding} />
             </ScrollView>
-        </SafeAreaView>
+        </ScreenBackground>
     );
 };
 
@@ -392,6 +395,6 @@ const styles = StyleSheet.create({
         color: '#fff',
     },
     bottomPadding: {
-        height: spacing.xl,
+        height: 100,
     },
 });

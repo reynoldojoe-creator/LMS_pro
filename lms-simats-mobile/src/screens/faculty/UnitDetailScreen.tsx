@@ -1,9 +1,11 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { colors, typography, spacing} from '../../theme';
+import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
 import { useFacultyStore } from '../../store';
-import { LinenBackground, GlossyNavBar, GroupedTableView } from '../../components/ios6';
+import { ScreenBackground, ModernNavBar, InsetGroupedList } from '../../components/common';
 import { Ionicons } from '@expo/vector-icons';
 
 type Props = NativeStackScreenProps<any, 'UnitDetail'>;
@@ -16,12 +18,12 @@ export const UnitDetailScreen = ({ route, navigation }: Props) => {
 
     if (!subject || !unit) {
         return (
-            <LinenBackground>
-                <GlossyNavBar title="Unit Error" showBack onBack={() => navigation.goBack()} />
+            <ScreenBackground>
+                <ModernNavBar title="Unit Error" showBack onBack={() => navigation.goBack()} />
                 <View style={styles.center}>
                     <Text>Unit not found</Text>
                 </View>
-            </LinenBackground>
+            </ScreenBackground>
         );
     }
 
@@ -29,34 +31,60 @@ export const UnitDetailScreen = ({ route, navigation }: Props) => {
         navigation.navigate('TopicDetail', { subjectId, unitId, topicId });
     };
 
-    const topicRows = (unit.topics || []).map(topic => ({
+    const items = unit.topics?.map(topic => ({
+        id: topic.id,
         title: topic.name,
         subtitle: `${topic.questionCount || 0} Questions Generated`,
         onPress: () => handleTopicPress(topic.id),
-        chevron: true
-    }));
+        showChevron: true,
+        icon: 'document-text-outline'
+    })) || [];
+
+    if (items.length === 0) {
+        items.push({ title: 'No topics found' } as any);
+    }
 
     return (
-        <LinenBackground>
-            <GlossyNavBar title={`Unit ${unit.number}`} showBack onBack={() => navigation.goBack()} />
-
-            <Text style={styles.unitTitle}>{unit.title}</Text>
-            <Text style={styles.unitDesc}>{unit.description || 'No description available'}</Text>
-
-            <GroupedTableView
-                sections={[
-                    {
-                        title: 'TOPICS',
-                        data: topicRows.length > 0 ? topicRows : [{ title: 'No topics found', disabled: true }]
-                    }
-                ]}
+        <ScreenBackground>
+            <ModernNavBar
+                title={`Unit ${unit.number}`}
+                showBack
+                onBack={() => navigation.goBack()}
             />
-        </LinenBackground>
+
+            <ScrollView contentContainerStyle={styles.content}>
+                <View style={styles.headerSection}>
+                    <Text style={styles.unitTitle}>{unit.title}</Text>
+                    <Text style={styles.unitDesc}>{unit.description || 'No description available'}</Text>
+                </View>
+
+                <InsetGroupedList
+                    header="TOPICS"
+                    items={items}
+                />
+            </ScrollView>
+        </ScreenBackground>
     );
 };
 
 const styles = StyleSheet.create({
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    unitTitle: { fontSize: 20, fontWeight: 'bold', color: '#333', textAlign: 'center', marginTop: 20, marginBottom: 5, textShadowColor: 'white', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 0 },
-    unitDesc: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 20, paddingHorizontal: 20 },
+    content: {
+        paddingBottom: spacing.xl,
+    },
+    headerSection: {
+        padding: spacing.lg,
+        alignItems: 'center',
+    },
+    unitTitle: {
+        ...typography.h2,
+        color: colors.textPrimary,
+        marginBottom: spacing.xs,
+        textAlign: 'center',
+    },
+    unitDesc: {
+        ...typography.body,
+        color: colors.textSecondary,
+        textAlign: 'center',
+    },
 });

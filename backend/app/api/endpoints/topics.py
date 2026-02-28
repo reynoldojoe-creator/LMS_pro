@@ -415,6 +415,74 @@ async def list_topic_files(
         
     return files
 
+@router.delete("/{subject_id}/topics/{topic_id}/files/{file_type}/{file_name:path}")
+async def delete_topic_file(
+    subject_id: int,
+    topic_id: int,
+    file_type: str,
+    file_name: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a specific file uploaded for this topic.
+    file_type: 'syllabus', 'notes', 'samples'
+    """
+    subject = db.query(database.Subject).filter(database.Subject.id == subject_id).first()
+    if not subject:
+        raise HTTPException(status_code=404, detail="Subject not found")
+
+    try:
+        if file_type == "syllabus":
+            file_path = Path(os.getcwd()) / "data/subjects" / subject.code / "topics" / str(topic_id) / "syllabus" / file_name
+            if file_path.exists():
+                os.remove(file_path)
+            else:
+                raise HTTPException(status_code=404, detail="File not found")
+                
+        elif file_type == "notes":
+            # Delete from DB
+            note = db.query(database.TopicNotes).filter(
+                database.TopicNotes.subject_id == subject_id,
+                database.TopicNotes.topic_id == topic_id,
+                database.TopicNotes.title == file_name
+            ).first()
+            if note:
+                if note.file_path and os.path.exists(note.file_path):
+                    os.remove(note.file_path)
+                db.delete(note)
+                db.commit()
+            else:
+                raise HTTPException(status_code=404, detail="Note not found")
+                
+        elif file_type == "samples":
+            # file_name is used as the file_path identifier from sample grouping
+            sample_query = db.query(SampleQuestion).filter(
+                SampleQuestion.subject_id == subject_id,
+                SampleQuestion.topic_id == topic_id
+            )
+            # If file_name is "Manual Entry", we delete those. Otherwise, match file_path.
+            if file_name == "Manual Entry":
+                sample_query = sample_query.filter(
+                    (SampleQuestion.file_path == None) | (SampleQuestion.file_path == "")
+                )
+            else:
+                sample_query = sample_query.filter(SampleQuestion.file_path.endswith(file_name))
+                
+            deleted_count = sample_query.delete(synchronize_session=False)
+            db.commit()
+            if deleted_count == 0:
+                raise HTTPException(status_code=404, detail="Sample questions not found")
+                
+        else:
+            raise HTTPException(status_code=400, detail="Invalid file type")
+            
+        return {"message": "File deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting file: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Topic Question Generation (Faculty Reference)
 @router.post("/{subject_id}/topics/{topic_id}/samples")
 async def upload_samples(

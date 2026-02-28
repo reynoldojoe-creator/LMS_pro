@@ -193,14 +193,17 @@ async def list_rubrics(db: Session = Depends(get_db)):
 
 
 @app.get("/rubrics/{rubric_id}")
-async def get_rubric(rubric_id: int, db: Session = Depends(get_db)):
+async def get_rubric(rubric_id: str, db: Session = Depends(get_db)):
     rubric = db.query(database.Rubric).filter(database.Rubric.id == rubric_id).first()
     if not rubric:
         raise HTTPException(status_code=404, detail="Rubric not found")
     
+    subject = db.query(database.Subject).filter(database.Subject.id == rubric.subject_id).first()
+    
     return {
         "id": str(rubric.id),
         "subjectId": str(rubric.subject_id),
+        "subjectName": subject.name if subject else "Unknown Subject",
         "examType": rubric.exam_type,
         "title": rubric.title,
         "duration": rubric.duration,

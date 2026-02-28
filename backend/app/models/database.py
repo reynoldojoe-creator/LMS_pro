@@ -199,6 +199,7 @@ class Question(Base):
     options = Column(Text, nullable=True) # JSON string for MCQs
     correct_answer = Column(Text, nullable=True)
     difficulty = Column(String)
+    bloom_level = Column(String, nullable=True)  # e.g. K1-Remember, K3-Apply, K5-Evaluate
     marks = Column(Integer)
     
     # Generation Mode Flags
@@ -243,6 +244,7 @@ class TopicNotes(Base):
 # Import additional models so they register with Base.metadata
 from .topic_question import TopicQuestion
 from .sample_question import SampleQuestion
+from .vetting_models import GeneratedQuestion, VettingFeedback
 
 
 def init_db():

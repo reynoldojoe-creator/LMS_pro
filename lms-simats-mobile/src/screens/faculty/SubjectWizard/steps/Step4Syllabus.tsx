@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, TextInput } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { useAppTheme } from '../../../../hooks';
-import { spacing, typography} from '../../../../theme';
+import { typography } from '../../../../theme/typography';
+import { spacing } from '../../../../theme/spacing';
 import { Button, LoadingSkeleton } from '../../../../components/common';
 import { subjectService } from '../../../../services/subjectService';
 

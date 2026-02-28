@@ -3,7 +3,9 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, ActivityIn
 import { Button } from 'react-native-elements';
 import * as DocumentPicker from 'expo-document-picker';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing} from '../theme';
+import { colors } from '../theme/colors';
+import { typography } from '../theme/typography';
+import { spacing } from '../theme/spacing';
 import { useFacultyStore } from '../store/facultyStore';
 
 interface Props {
@@ -91,7 +93,10 @@ export const SampleQuestionsUploadModal: React.FC<Props> = ({
 
         try {
             await uploadSampleQuestions(subjectId, topicId, selectedType, selectedFile);
-            Alert.alert('Success', `${selectedType} questions uploaded successfully!`);
+            Alert.alert(
+                'Upload Started',
+                `${selectedType} questions are being processed in the background. The Uploaded Materials section will update automatically in a few seconds.`
+            );
             onClose();
             setSelectedType(null);
             setSelectedFile(null);

@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { colors, typography, spacing} from '../../theme';
+import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
 import { Button, Modal, Card } from '../../components/common';
 import { Ionicons } from '@expo/vector-icons';
 import { useVetterStore } from '../../store/vetterStore';
 
-import { Question, Subject } from '../../types';
-import { subjectService } from '../../services/subjectService';
+import { Question } from '../../types';
 
 // Define types for UI state
 interface COMapping {
@@ -45,7 +46,6 @@ export const QuestionReviewScreen = ({ route, navigation }: Props) => {
     // Local state for adjustments before saving
     const [coAdjustments, setCoAdjustments] = useState<Record<string, COMapping[]>>({});
     const [loAdjustments, setLoAdjustments] = useState<Record<string, LOMapping[]>>({});
-    const [subject, setSubject] = useState<Subject | null>(null);
 
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [rejectCategory, setRejectCategory] = useState('');
@@ -68,24 +68,7 @@ export const QuestionReviewScreen = ({ route, navigation }: Props) => {
         ]);
     }, [batchId]);
 
-    // Fetch Subject Details
-    useEffect(() => {
-        const fetchSubject = async () => {
-            const questions = currentBatch?.questions || [];
-            if (questions.length > 0) {
-                const firstQ = questions[0];
-                try {
-                    const data = await subjectService.getById(firstQ.subjectId);
-                    setSubject(data);
-                } catch (e) {
-                    console.error("Failed to fetch subject details", e);
-                }
-            }
-        };
-        if (currentBatch && !subject) {
-            fetchSubject();
-        }
-    }, [currentBatch]);
+    // Removed subject fetch because we use subjectCOs and subjectLOs from the batch API
 
     const questions = currentBatch?.questions || [];
     const currentQuestion = questions[currentIndex];
@@ -99,7 +82,10 @@ export const QuestionReviewScreen = ({ route, navigation }: Props) => {
                 const parsed = JSON.parse(data);
                 return Array.isArray(parsed) ? parsed : [];
             } catch {
-                return [];
+                return data.split(',').map(s => s.trim()).filter(Boolean).map(code => ({
+                    co_code: code,
+                    intensity: 2 // Default intensity = moderate
+                }));
             }
         }
         return [];
@@ -175,13 +161,22 @@ export const QuestionReviewScreen = ({ route, navigation }: Props) => {
         setCoAdjustments({ ...coAdjustments, [qId]: newMappings });
     };
 
-    const handleLOIntensityChange = (loIndex: number, newIntensity: 1 | 3) => {
+    const toggleLOMapping = (loCode: string, intensity: 1 | 2 | 3) => {
         if (!currentQuestion) return;
         const qId = currentQuestion.id;
         const currentMappings = loAdjustments[qId] || parseMappings(currentQuestion.loId);
-        const updatedMappings = [...currentMappings];
-        updatedMappings[loIndex] = { ...updatedMappings[loIndex], intensity: newIntensity };
-        setLoAdjustments({ ...loAdjustments, [qId]: updatedMappings });
+        let newMappings = [...currentMappings];
+
+        const existingIndex = newMappings.findIndex((m: any) => m.lo_code === loCode);
+
+        if (existingIndex >= 0) {
+            newMappings[existingIndex] = { ...newMappings[existingIndex], intensity };
+        } else {
+            // Add new
+            newMappings.push({ lo_code: loCode, intensity });
+        }
+
+        setLoAdjustments({ ...loAdjustments, [qId]: newMappings });
     };
 
     const handleApprove = async () => {
@@ -270,8 +265,14 @@ export const QuestionReviewScreen = ({ route, navigation }: Props) => {
                                         styles.optionRow,
                                         currentQuestion.correctAnswer === label && styles.correctOption
                                     ]}>
-                                        <View style={styles.optionKey}>
-                                            <Text style={styles.optionKeyText}>{label}</Text>
+                                        <View style={[
+                                            styles.optionKey,
+                                            currentQuestion.correctAnswer === label && styles.correctOptionKey
+                                        ]}>
+                                            <Text style={[
+                                                styles.optionKeyText,
+                                                currentQuestion.correctAnswer === label && styles.correctOptionKeyText
+                                            ]}>{label}</Text>
                                         </View>
                                         <Text style={styles.optionText}>{opt}</Text>
                                         {currentQuestion.correctAnswer === label && (
@@ -284,8 +285,14 @@ export const QuestionReviewScreen = ({ route, navigation }: Props) => {
                                     styles.optionRow,
                                     currentQuestion.correctAnswer === key && styles.correctOption
                                 ]}>
-                                    <View style={styles.optionKey}>
-                                        <Text style={styles.optionKeyText}>{key}</Text>
+                                    <View style={[
+                                        styles.optionKey,
+                                        currentQuestion.correctAnswer === key && styles.correctOptionKey
+                                    ]}>
+                                        <Text style={[
+                                            styles.optionKeyText,
+                                            currentQuestion.correctAnswer === key && styles.correctOptionKeyText
+                                        ]}>{key}</Text>
                                     </View>
                                     <Text style={styles.optionText}>{String(value)}</Text>
                                     {currentQuestion.correctAnswer === key && (
@@ -309,8 +316,8 @@ export const QuestionReviewScreen = ({ route, navigation }: Props) => {
                     <Text style={styles.sectionTitle}>Course Outcome Mapping</Text>
                 </View>
                 <Card style={styles.coCard}>
-                    {subject?.courseOutcomes && subject.courseOutcomes.length > 0 ? (
-                        subject.courseOutcomes.map((co, index) => {
+                    {currentBatch?.subjectCOs && currentBatch.subjectCOs.length > 0 ? (
+                        currentBatch.subjectCOs.map((co, index) => {
                             const qId = currentQuestion.id;
                             const currentMappings = coAdjustments[qId] || parseMappings(currentQuestion.coId);
                             const existingMapping = currentMappings.find((m: any) => m.co_code === co.code);
@@ -346,7 +353,7 @@ export const QuestionReviewScreen = ({ route, navigation }: Props) => {
                             );
                         })
                     ) : (
-                        <Text style={styles.emptyText}>Loading Course Outcomes...</Text>
+                        <Text style={styles.emptyText}>No Course Outcomes found for this subject.</Text>
                     )}
                 </Card>
 
@@ -355,32 +362,45 @@ export const QuestionReviewScreen = ({ route, navigation }: Props) => {
                     <Text style={styles.sectionTitle}>Learning Outcome Mapping</Text>
                 </View>
                 <Card style={styles.coCard}>
-                    {activeLOMappings.length > 0 ? activeLOMappings.map((mapping, index) => (
-                        <View key={index} style={styles.coRow}>
-                            <Text style={styles.coCode}>{mapping.lo_code}</Text>
-                            <View style={styles.intensityContainer}>
-                                <Text style={styles.intensityLabel}>Intensity:</Text>
-                                <View style={styles.intensityButtons}>
-                                    {[1, 2, 3].map((level) => (
-                                        <TouchableOpacity
-                                            key={level}
-                                            style={[
-                                                styles.intensityButton,
-                                                mapping.intensity === level && styles.intensityButtonActive,
-                                                mapping.intensity === level && { backgroundColor: getIntensityColor(level) }
-                                            ]}
-                                            onPress={() => handleLOIntensityChange(index, level as 1 | 3)}
-                                        >
-                                            <Text style={[
-                                                styles.intensityButtonText,
-                                                mapping.intensity === level && styles.intensityButtonTextActive
-                                            ]}>{level}</Text>
-                                        </TouchableOpacity>
-                                    ))}
+                    {currentBatch?.subjectLOs && currentBatch.subjectLOs.length > 0 ? (
+                        currentBatch.subjectLOs.map((lo, index) => {
+                            const qId = currentQuestion.id;
+                            const currentMappings = loAdjustments[qId] || parseMappings(currentQuestion.loId);
+                            const existingMapping = currentMappings.find((m: any) => m.lo_code === lo.code);
+                            const currentIntensity = existingMapping ? existingMapping.intensity : null;
+
+                            return (
+                                <View key={lo.id} style={styles.coRow}>
+                                    <View style={styles.coInfo}>
+                                        <Text style={styles.coCode}>{lo.code}</Text>
+                                        <Text style={styles.coDescription} numberOfLines={2}>{lo.description}</Text>
+                                    </View>
+                                    <View style={styles.intensityWrapper}>
+                                        <View style={styles.intensityButtons}>
+                                            {[1, 2, 3].map((level) => (
+                                                <TouchableOpacity
+                                                    key={level}
+                                                    style={[
+                                                        styles.intensityButton,
+                                                        currentIntensity === level && styles.intensityButtonActive,
+                                                        currentIntensity === level && { backgroundColor: getIntensityColor(level) }
+                                                    ]}
+                                                    onPress={() => toggleLOMapping(lo.code, level as 1 | 2 | 3)}
+                                                >
+                                                    <Text style={[
+                                                        styles.intensityButtonText,
+                                                        currentIntensity === level && styles.intensityButtonTextActive
+                                                    ]}>{level}</Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
+                                    </View>
                                 </View>
-                            </View>
-                        </View>
-                    )) : <Text style={styles.emptyText}>No LOs Mapped</Text>}
+                            );
+                        })
+                    ) : (
+                        <Text style={styles.emptyText}>No Learning Outcomes found for this subject.</Text>
+                    )}
                 </Card>
 
             </ScrollView>
@@ -585,6 +605,12 @@ const styles = StyleSheet.create({
         color: colors.surface,
         fontSize: 12,
         fontWeight: 'bold',
+    },
+    correctOptionKey: {
+        backgroundColor: colors.success,
+    },
+    correctOptionKeyText: {
+        color: '#FFF',
     },
     optionText: {
         ...typography.body,

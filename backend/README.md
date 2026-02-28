@@ -25,7 +25,7 @@ Backend service for the LMS-SIMATS exam question generation system.
 
 Start the FastAPI server:
 ```bash
-uvicorn backend.app.main:app --reload
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 The API will be available at `http://localhost:8000`.
 Swagger UI documentation is available at `http://localhost:8000/docs`.

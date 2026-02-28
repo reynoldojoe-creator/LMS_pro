@@ -232,6 +232,8 @@ async def get_subject(subject_id: int, db: Session = Depends(get_db)):
     }
 
 
+from ...models.topic_question import TopicQuestion
+
 @router.get("/{subject_id}/topics/{topic_id}")
 async def get_topic_detail(subject_id: int, topic_id: int, db: Session = Depends(get_db)):
     """Get topic details"""
@@ -240,26 +242,42 @@ async def get_topic_detail(subject_id: int, topic_id: int, db: Session = Depends
         raise HTTPException(status_code=404, detail="Topic not found")
         
     question_counts = {
-        "mcq": db.query(database.Question).filter(database.Question.topic_id == topic_id, database.Question.question_type == "mcq").count(),
-        "short_answer": db.query(database.Question).filter(database.Question.topic_id == topic_id, database.Question.question_type == "short_answer").count(),
-        "essay": db.query(database.Question).filter(database.Question.topic_id == topic_id, database.Question.question_type == "essay").count()
+        "mcq": db.query(TopicQuestion).filter(TopicQuestion.topic_id == topic_id, TopicQuestion.question_type == "MCQ").count(),
+        "short_answer": db.query(TopicQuestion).filter(TopicQuestion.topic_id == topic_id, TopicQuestion.question_type == "Short").count(),
+        "essay": db.query(TopicQuestion).filter(TopicQuestion.topic_id == topic_id, TopicQuestion.question_type == "Essay").count()
     }
     
     notes = db.query(database.TopicNotes).filter(database.TopicNotes.topic_id == topic_id).all()
     
     # Manually map mappings since schema might be tricky with secondary
-    mapped_cos = [{"id": co.id, "code": co.code, "description": co.description} for co in topic.mapped_cos]
+    topic_co_mappings = db.query(database.TopicCOMapping).filter(database.TopicCOMapping.topic_id == topic_id).all()
+    
+    mapped_cos = []
+    for mapping in topic_co_mappings:
+        co = db.query(database.CourseOutcome).filter(database.CourseOutcome.id == mapping.course_outcome_id).first()
+        if co:
+            mapped_cos.append({
+                "id": co.id, 
+                "code": co.code, 
+                "description": co.description,
+                "weight": mapping.weight
+            })
+
     mapped_los = [{"id": lo.id, "code": lo.code, "description": lo.description} for lo in topic.mapped_los]
 
     today_date = datetime.utcnow()
     
-    # Calculate total questions
-    total_questions = sum(question_counts.values())
+    # Calculate total questions (include both TopicQuestion and Question table)
+    ref_count = db.query(database.Question).filter(
+        database.Question.topic_id == topic_id,
+        database.Question.is_reference == 1
+    ).count()
+    total_questions = sum(question_counts.values()) + ref_count
 
-    # Fetch generated questions for this topic
-    questions = db.query(database.Question).filter(
-        database.Question.topic_id == topic_id
-    ).order_by(database.Question.id.desc()).all()
+    # Fetch generated questions for this topic from TopicQuestion table (legacy)
+    questions = db.query(TopicQuestion).filter(
+        TopicQuestion.topic_id == topic_id
+    ).order_by(TopicQuestion.id.desc()).all()
 
     # Normalize questions for frontend
     questions_list = []
@@ -269,9 +287,39 @@ async def get_topic_detail(subject_id: int, topic_id: int, db: Session = Depends
             "questionText": q.question_text,
             "questionType": q.question_type,
             "difficulty": q.difficulty,
-            "marks": q.marks,
-            "CO": q.co_id,
-            "LO": q.lo_id
+            "marks": 1, # TopicQuestions don't have explicit marks
+            "CO": "",   # TopicQuestions don't map CO per question
+            "LO": "",
+            "options": q.options,
+            "correctAnswer": q.correct_answer,
+            "bloomLevel": q.bloom_level
+        })
+
+    # Also fetch from Question table (quick-generate saves here with is_reference=1)
+    ref_questions = db.query(database.Question).filter(
+        database.Question.topic_id == topic_id,
+        database.Question.is_reference == 1
+    ).order_by(database.Question.id.desc()).all()
+
+    for q in ref_questions:
+        options_data = q.options
+        if isinstance(options_data, str):
+            try:
+                import json as _json
+                options_data = _json.loads(options_data)
+            except:
+                pass
+        questions_list.append({
+            "id": str(q.id),
+            "questionText": q.question_text,
+            "questionType": q.question_type,
+            "difficulty": q.difficulty or "medium",
+            "marks": q.marks or 1,
+            "CO": q.co_id or "",
+            "LO": q.lo_id or "",
+            "options": options_data,
+            "correctAnswer": q.correct_answer,
+            "bloomLevel": q.bloom_level or "understand"
         })
 
     return {
@@ -307,15 +355,24 @@ async def update_topic_mappings(
     # Topic -> Unit -> Subject is the chain.
     
     # 1. Update CO mappings
-    if mapping.co_ids is not None:
-        # Fetch COs
-        cos = db.query(database.CourseOutcome).filter(
-            database.CourseOutcome.id.in_(mapping.co_ids),
-            database.CourseOutcome.subject_id == subject_id
-        ).all()
+    if mapping.co_mappings is not None:
+        # Clear existing mappings for a fresh replacement
+        db.query(database.TopicCOMapping).filter(database.TopicCOMapping.topic_id == topic_id).delete()
         
-        # Replace existing
-        topic.mapped_cos = cos
+        for co_req in mapping.co_mappings:
+            if co_req.weight in ["Low", "Moderate", "High"]:  # Skip if "None"
+                # Validate that the CO actually belongs to this subject
+                co = db.query(database.CourseOutcome).filter(
+                    database.CourseOutcome.id == co_req.co_id,
+                    database.CourseOutcome.subject_id == subject_id
+                ).first()
+                if co:
+                    new_mapping = database.TopicCOMapping(
+                        topic_id=topic_id,
+                        course_outcome_id=co.id,
+                        weight=co_req.weight
+                    )
+                    db.add(new_mapping)
         
     # 2. Update LO mappings
     if mapping.lo_ids is not None:

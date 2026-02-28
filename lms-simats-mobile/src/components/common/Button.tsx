@@ -6,7 +6,9 @@ import {
     ActivityIndicator,
     View,
 } from 'react-native';
-import { typography, spacing} from '../../theme';
+import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
 import { useAppTheme } from '../../hooks';
 
 interface ButtonProps {

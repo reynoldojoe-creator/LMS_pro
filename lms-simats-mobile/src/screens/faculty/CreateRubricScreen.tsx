@@ -3,7 +3,9 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, Alert,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 // Using pure RN components for CO slider - no external dependency needed
-import { colors, typography, spacing} from '../../theme';
+import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
 import { useRubricStore } from '../../store';
 import { useFacultyStore } from '../../store';
 import { Button, Input, Modal, Header, Card } from '../../components/common'; // Added Header, Card

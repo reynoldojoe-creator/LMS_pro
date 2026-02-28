@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { useAppTheme } from '../../../../hooks';
-import { spacing, typography} from '../../../../theme';
+import { spacing } from '../../../../theme/spacing';
+import { typography } from '../../../../theme/typography';
 import { Button } from '../../../../components/common';
 import { subjectService } from '../../../../services/subjectService';
 

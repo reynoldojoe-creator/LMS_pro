@@ -62,6 +62,43 @@ async def run_training_job(job_id: str, topic_id: int, db_session_factory, job_m
         cos = [f"{co.code}: {co.description}" for co in topic.mapped_cos]
         los = [f"{lo.code}: {lo.description}" for lo in topic.mapped_los]
         
+        # Gather vetter-approved intensity data for this topic
+        approved_questions = db.query(database.Question).filter(
+            database.Question.topic_id == topic_id,
+            database.Question.status == "approved",
+            database.Question.approval_feedback.isnot(None)
+        ).all()
+
+        # Aggregate CO/LO intensities from vetter feedback
+        co_intensity_totals = {}  # {co_code: [intensities]}
+        lo_intensity_totals = {}  # {lo_code: [intensities]}
+
+        for aq in approved_questions:
+            try:
+                feedback = json.loads(aq.approval_feedback)
+                for co in (feedback.get("co_adjustment") or []):
+                    code = co.get("co_code", "")
+                    intensity = co.get("intensity", 0)
+                    if code and intensity:
+                        co_intensity_totals.setdefault(code, []).append(intensity)
+                for lo in (feedback.get("lo_adjustment") or []):
+                    code = lo.get("lo_code", "")
+                    intensity = lo.get("intensity", 0)
+                    if code and intensity:
+                        lo_intensity_totals.setdefault(code, []).append(intensity)
+            except (json.JSONDecodeError, AttributeError):
+                continue
+
+        # Compute averages
+        co_intensity_avg = {
+            code: round(sum(vals) / len(vals), 1)
+            for code, vals in co_intensity_totals.items()
+        }
+        lo_intensity_avg = {
+            code: round(sum(vals) / len(vals), 1)
+            for code, vals in lo_intensity_totals.items()
+        }
+        
         training_jobs[job_id]["progress"] = 20
         training_jobs[job_id]["current_step"] = "Formatting data..."
         
@@ -124,7 +161,9 @@ async def run_training_job(job_id: str, topic_id: int, db_session_factory, job_m
             sample_questions=samples_formatted,
             notes_content=notes_content,
             co_descriptions=cos,
-            lo_descriptions=los
+            lo_descriptions=los,
+            co_intensity_weights=co_intensity_avg,
+            lo_intensity_weights=lo_intensity_avg
         )
         
         training_jobs[job_id]["progress"] = 90

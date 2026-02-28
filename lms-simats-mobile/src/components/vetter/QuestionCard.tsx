@@ -3,7 +3,9 @@ import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { Card } from '../common/Card'; // Assuming Card exists in common
 import { Tag } from '../common/Tag'; // Assuming Tag exists in common
-import { typography, spacing} from '../../theme';
+import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
 import { useAppTheme } from '../../hooks';
 import { Question } from '../../types'; // Assuming Question type exists
 
